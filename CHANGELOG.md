@@ -59,6 +59,19 @@ sube todo el scaffolding necesario para empezar a implementar Fly-In 1.5.
    épicas M2–M6, el Project v2 y la protección de `main`. Se ejecuta una sola vez vía el
    comando `/bootstrap-github`.
 
+9. **`Improve .gitignore for Python workflow (env files, coverage, editors)`**
+   El `.gitignore` recortado del primer commit cubría lo básico pero le faltaban casos
+   habituales: variables de entorno (`.env`), reportes de cobertura (`coverage.xml`),
+   virtualenvs con otro nombre (`env/`) y ruido de editores/SO (`*.swp`, `Thumbs.db`).
+   Se agrupó por categorías para que sea fácil de mantener.
+
+### Nota sobre los checks de CI en rojo
+
+Es esperado en este punto: no hay ningún `.py` todavía (M0). `flake8` pasa porque no hay
+nada que reportar, pero `mypy` falla con "no .py files" y `pytest` falla con "no tests
+ran" — ambos tratan "cero archivos que analizar" como error, no como éxito. En cuanto
+exista el primer módulo de dominio con su test, los tres stages deberían ponerse verdes.
+
 ### Convención de este fichero
 
 A partir de ahora, cada PR añade su propia entrada aquí (fecha + lista de commits con una

@@ -1,15 +1,32 @@
+# Bytecode / packaging
 __pycache__/
 *.py[cod]
+*.egg
 *.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Env vars / local secrets
+.env
+.env.*
+
+# Test / type-check / coverage artifacts
 .pytest_cache/
 .mypy_cache/
 .coverage
+coverage.xml
 htmlcov/
-.venv/
-venv/
-dist/
-build/
-*.log
-.DS_Store
+
+# Editors / OS
 .idea/
 .vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+*.log
