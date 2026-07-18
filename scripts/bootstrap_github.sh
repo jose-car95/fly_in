@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bootstrap de GitHub para Fly-In: labels, issues M0/M1, épicas M2-M6, Project v2,
-# campos Status/Milestone y protección de main. Ejecutar UNA vez desde la raíz del repo,
+# campos Status/Flyin Milestone y protección de main. Ejecutar UNA vez desde la raíz del repo,
 # con `gh auth login` ya hecho. Requiere: gh, git, python3.
 #
 # Política de permisos: si un comando gh falla por scope insuficiente, este script se
@@ -35,15 +35,15 @@ PROJ_JSON=$(gh project create --owner "$OWNER" --title "Fly-In" --format json 2>
 PROJ_NUM=$(echo "$PROJ_JSON" | python3 -c "import sys,json;print(json.load(sys.stdin)['number'])")
 echo "  Project #$PROJ_NUM creado"
 
-gh project field-create "$PROJ_NUM" --owner "$OWNER" --name "Milestone" \
+gh project field-create "$PROJ_NUM" --owner "$OWNER" --name "Flyin Milestone" \
   --data-type SINGLE_SELECT --single-select-options "M0,M1,M2,M3,M4,M5,M6" >/dev/null \
   || fail_scope "gh project field-create" "project"
-echo "  Campo Milestone (M0-M6) creado (Status Todo/In Progress/Done ya existe por defecto)"
+echo "  Campo Flyin Milestone (M0-M6) creado (Status Todo/In Progress/Done ya existe por defecto)"
 
 FIELDS=$(gh project field-list "$PROJ_NUM" --owner "$OWNER" --format json)
 PROJ_ID=$(gh project view "$PROJ_NUM" --owner "$OWNER" --format json | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
 
-# set_fields <item_id> <milestone M0..M6>  -> Status=Todo y Milestone
+# set_fields <item_id> <milestone M0..M6>  -> Status=Todo y Flyin Milestone
 set_fields() {
   python3 - "$1" "$2" << 'PY' | bash
 import sys, json, os, subprocess
@@ -55,7 +55,7 @@ def opt(fname, oname):
     o = next(o for o in f["options"] if o["name"] == oname)
     return f["id"], o["id"]
 sid, soid = opt("Status", "Todo")
-mid, moid = opt("Milestone", ms)
+mid, moid = opt("Flyin Milestone", ms)
 for fid, oid in ((sid, soid), (mid, moid)):
     print(f"gh project item-edit --id {item} --project-id {proj} --field-id {fid} --single-select-option-id {oid}")
 PY
@@ -205,7 +205,7 @@ Las VISTAS y las AUTOMATIZACIONES del Project no se pueden configurar por CLI/AP
 Abre el Project "Fly-In" (#$PROJ_NUM) en github.com y haz:
 
 1. Vista principal Board: en la vista por defecto, menú de la pestaña -> Layout: Board
-   (columnas por Status). Opcional: Group by -> Milestone en una copia.
+   (columnas por Status). Opcional: Group by -> Flyin Milestone en una copia.
 2. Vista secundaria Table: New view -> Table.
 3. Automatizaciones (icono ... -> Workflows):
    - "Item added to project" -> Status: Todo   (ON)
