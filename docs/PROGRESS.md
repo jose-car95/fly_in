@@ -5,11 +5,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: M0 (no empezado).
-- Último slice completado: ninguno.
-- Verificado con comandos: nada todavía.
-- Siguiente paso propuesto: resolver el permiso `project` del token de `gh` (ver sección
-  GitHub) y terminar `/bootstrap-github`; después, el primer slice de M0.
+- Milestone: M1 en progreso (M0 cerrado).
+- Último slice completado: M1.1 — `parse_map()` convierte el mapa mínimo
+  (`nb_drones` + `start_hub`/`end_hub`/`connection`) en `Zone`/`Connection`/`FlyInMap`.
+  Solo camino feliz: sin metadatos, sin tipos de zona no-normal, sin validación de
+  duplicados/capacidades — eso llega con sus propios tests en M1.2+.
+- Verificado con comandos: `pytest` (1 passed), `flake8 .` (limpio), `mypy .` con los
+  flags de `make lint` (sin errores, 8 ficheros fuente). `make lint` y `make test`
+  también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: M1.2 — zonas `hub:` regulares (no start/end) y sus
+  coordenadas.
 
 ## Decisiones tomadas
 
@@ -49,4 +54,4 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 | Fecha | Qué se hizo | Estado al cerrar |
 | --- | --- | --- |
-| — | — | — |
+| 2026-07-20 | Slice M1.1: parser del mapa mínimo (`flyin/domain`, `flyin/parsing`); fix de `pyproject.toml` (setuptools confundía `maps/` con un paquete) | CI real en verde (pytest/flake8/mypy) con el primer código del repo |
