@@ -16,3 +16,6 @@ dev = [
   "mypy>=1.15,<2",
   "pytest>=8,<9",
 ]
+
+[tool.setuptools.packages.find]
+include = ["flyin*"]

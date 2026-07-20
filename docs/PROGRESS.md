@@ -5,13 +5,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: M0 (no empezado).
-- Último slice completado: ninguno.
-- Verificado con comandos: nada todavía. CI en rojo confirmado por causa esperada (cero
-  ficheros `.py`: `mypy` no tiene nada que revisar, `pytest` no colecciona tests) — no es
-  un bug, es M0 sin empezar.
-- Siguiente paso propuesto: rellenar `<login>` en la primera línea de `README.md`, y
-  después el primer slice de M0 (test rojo parseando `valid_minimal.txt`).
+- Milestone: M1 en progreso (M0 cerrado).
+- Último slice completado: M1.1 — `parse_map()` convierte el mapa mínimo
+  (`nb_drones` + `start_hub`/`end_hub`/`connection`) en `Zone`/`Connection`/`FlyInMap`.
+  Solo camino feliz: sin metadatos, sin tipos de zona no-normal, sin validación de
+  duplicados/capacidades — eso llega con sus propios tests en M1.2+.
+- Verificado con comandos: `pytest` (1 passed), `flake8 .` (limpio), `mypy .` con los
+  flags de `make lint` (sin errores, 8 ficheros fuente). `make lint` y `make test`
+  también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: M1.2 — zonas `hub:` regulares (no start/end) y sus
+  coordenadas.
 
 ## Decisiones tomadas
 
@@ -54,4 +57,5 @@ actual de `gh` sí lo tiene):
 
 | Fecha | Qué se hizo | Estado al cerrar |
 | --- | --- | --- |
-| 2026-07-20 | Diagnóstico de CI roja (M0 sin código, esperado); verificado que el bootstrap de GitHub ya está completo (estaba mal anotado como pausado); añadido rol de profesor a `CLAUDE.md`; versionados subject PDF y maps.tar.gz | M0 no empezado; a la espera de aprobar el primer slice |
+| 2026-07-20 | Diagnóstico de CI roja (M0 sin código, esperado); verificado que el bootstrap de GitHub ya está completo (estaba mal anotado como pausado); añadido rol de profesor y regla de variables globales a `CLAUDE.md`; versionados subject PDF y maps.tar.gz; renombrado Mario→Jose en todo el repo | M0 no empezado |
+| 2026-07-20 | Slice M1.1: parser del mapa mínimo (`flyin/domain`, `flyin/parsing`); fix de `pyproject.toml` (setuptools confundía `maps/` con un paquete) | CI real en verde (pytest/flake8/mypy) con el primer código del repo |
