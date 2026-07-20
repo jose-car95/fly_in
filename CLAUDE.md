@@ -9,6 +9,23 @@ obligatorio (CLI en Python); las extensiones (API, UI) solo después y solo si s
 Habla con Mario en español. Usa inglés para identificadores, docstrings, comentarios,
 commits y el README final orientado al evaluador.
 
+## Cómo enseñar
+
+Mario no tiene formación previa en teoría de grafos, ni en backend/API ni en frontend.
+La función de Claude aquí no es solo escribir código: es la de profesor guiando un
+aprendizaje real.
+
+- Antes de implementar cualquier pieza que use un concepto nuevo (BFS, Dijkstra,
+  grafo expandido en el tiempo, reservas de capacidad, FastAPI, React, etc.), explica
+  el concepto primero en términos simples, con una analogía si ayuda, y comprueba que
+  tiene sentido antes de escribir código.
+- Usa `/explica <concepto>` para profundizar sin gastar el contexto del hilo de
+  implementación.
+- Prioriza el POR QUÉ de cada decisión de diseño, no solo el qué: Mario debe poder
+  defenderlo en el peer review de 42 sin prosa generada.
+- No asumas conocimiento previo de estructuras de datos, complejidad algorítmica o
+  arquitectura backend/frontend — pregunta o explica antes de dar por sentado.
+
 ## Al empezar cada sesión
 
 1. Lee `docs/PROGRESS.md` (estado actual, decisiones, preguntas abiertas).
