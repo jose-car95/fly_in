@@ -42,11 +42,11 @@ actual de `gh` sí lo tiene):
 - Hecho: 18 issues — M0 (#3, #4), M1.1–M1.9 (#5–#13), 2 decisiones abiertas como issues
   (#14, #15), épicas M2–M6 (#16–#20). Los 18 están en el board, columna `Todo`.
 - Hecho: protección de `main` con `required_status_checks` (`lint`, `test`, strict).
-- Pendiente/decisión abierta: `enforce_admins` está en `false` — como único admin, Mario
+- Pendiente/decisión abierta: `enforce_admins` está en `false` — como único admin, Jose
   puede mergear aunque la CI esté en rojo (así se colaron los merges de las PRs #1/#2/#21
   con CI roja). Decidir si se activa `enforce_admins` una vez el primer slice de M0 deje
   la CI en verde, para que la protección sea real.
-- Movimientos manuales que le tocan a Mario: ninguno pendiente del bootstrap en sí.
+- Movimientos manuales que le tocan a Jose: ninguno pendiente del bootstrap en sí.
   Sigue pendiente rellenar `<login>` en `README.md` (dato personal, no soy quien decide
   el valor).
 

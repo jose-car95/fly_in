@@ -6,7 +6,7 @@ Tema a decidir: $ARGUMENTS
 1. Revisa docs/SPEC_NOTES.md y docs/PROGRESS.md por si ya hay una decisión relacionada.
 2. Presenta 2-4 opciones viables. Para cada una: descripción en 1-2 frases, ventajas,
    inconvenientes, impacto en la rúbrica/defensa y en los benchmarks si aplica.
-3. Recomienda una con su porqué, pero espera a que Mario elija.
+3. Recomienda una con su porqué, pero espera a que Jose elija.
 4. Al elegir: registra la decisión con fecha y motivo en la tabla de decisiones de
    docs/PROGRESS.md. Si es una interpretación del subject (zona gris), añádela o
    actualízala también en docs/SPEC_NOTES.md con etiqueta DECISIÓN.

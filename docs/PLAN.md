@@ -1,7 +1,7 @@
 # Plan incremental
 
 Cada milestone termina con: comportamiento demostrable, tests, `flake8` + `mypy` en verde,
-explicación breve a Mario y actualización de `PROGRESS.md`. No empezar un milestone
+explicación breve a Jose y actualización de `PROGRESS.md`. No empezar un milestone
 posterior para que uno anterior "parezca útil".
 
 ## M0 — Repositorio y contrato ejecutable
