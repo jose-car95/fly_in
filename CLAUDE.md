@@ -62,6 +62,11 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 - Errores de parseo: parar el programa con mensaje claro indicando línea (física, 1-based)
   y causa.
 - Interpretación de las zonas grises del subject: `docs/SPEC_NOTES.md`.
+- Prohibidas las variables globales mutables (estado a nivel de módulo que cambia entre
+  llamadas, o `global`/`nonlocal` para compartirlo). El estado vive en atributos de
+  instancia o se pasa explícitamente por parámetros/retorno. Esto no incluye constantes
+  de módulo inmutables (`UPPER_CASE`, valores fijos como prefijos de parseo o tablas de
+  coste) — esas sí son idiomáticas en Python y no violan la regla.
 
 ## Arquitectura (proyecto obligatorio)
 
