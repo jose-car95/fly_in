@@ -104,6 +104,12 @@ para que pase la implementación, salvo que el requisito fuera erróneo y quede 
 - Convención: una rama por issue; los PRs llevan `Closes #N` en la descripción para que
   el issue y el tablero se cierren solos al mergear. `main` está protegida: los stages
   `lint` y `test` del CI deben pasar antes de mergear.
+- El PR template (`.github/pull_request_template.md`) lo rellena **Claude**, con
+  evidencia real (comandos y salida, no descrita de memoria), y es quien abre la PR con
+  `gh pr create --body-file`. Nunca se deja en blanco ni se le pide a Jose que lo
+  rellene — esto aplica en cualquier sesión/chat, no es una preferencia puntual. Jose
+  revisa en GitHub y hace el merge manual: nunca merge automático, ni por Claude ni por
+  CI.
 - Slash commands disponibles: `/explica <concepto>` (tutor en subagent de solo lectura),
   `/decide <tema>` (opciones + trade-offs + registrar decisión), `/checkrubric` (estado
   vs rúbrica), `/bootstrap-github` (issues, tablero y protección de rama; una sola vez).

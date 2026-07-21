@@ -1,0 +1,39 @@
+==================
+ARBOL DE DIRECTORIOS OBJETIVO:
+================================
+fly_in/
+  ├── CLAUDE.md, README.md, CHANGELOG.md, LICENSE, Makefile, pyproject.toml, .flake8
+  ├── main.py                        # entrypoint del CLI (M6) — "python main.py mapa.txt"
+  ├── .github/workflows/ci.yml
+  ├── .claude/                       # agentes y slash commands (ya existe)
+  ├── docs/                          
+  │   ├── PLAN.md, PROGRESS.md, SPEC_NOTES.md, EVALUATION.md
+  │   └── en.subject.pdf, maps.tar.gz
+  ├── maps/                          # mapas oficiales v1.5 (ya existen, nunca se tocan)
+  │   └── easy/ medium/ hard/ challenger/
+  │
+  ├── flyin/                         # el paquete real — ya empezó a nacer
+  │   ├── domain/                    # entidades e invariantes (M1)
+  │   │   ├── zone.py, connection.py, fly_in_map.py     ← YA EXISTEN
+  │   │   └── drone.py                                   ← llega en M3 (estado del dron)
+  │   ├── parsing/                   # texto → dominio (M1)
+  │   │   └── map_parser.py          ← YA EXISTE (se irá ampliando slice a slice)
+  │   ├── graph/                     # grafo propio + adyacencia (M2)
+  │   │   └── graph.py    
+  │   ├── pathfinding/                # BFS/Dijkstra propios (M2)
+  │   │   └── shortest_path.py
+  │   ├── scheduling/                 # reservas de capacidad/tiempo (M4)
+  │   │   ├── reservation_table.py
+  │   │   └── scheduler.py
+  │   ├── simulation/                 # motor de turnos determinista + validador (M3)
+  │   │   ├── turn_engine.py
+  │   │   └── validator.py
+  │   └── cli/                        # argumentos, stdout exacto, visual coloreado (M6)
+  │       ├── main.py, formatter.py, visualizer.py
+  │   
+  └── tests/                          # espejo de la estructura de flyin/
+      ├── fixtures/edge-cases/        ← YA EXISTE
+      ├── domain/, parsing/           ← parsing/ ya tiene su primer test
+      ├── graph/, pathfinding/
+      ├── scheduling/, simulation/
+      └── cli/
