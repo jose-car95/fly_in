@@ -5,11 +5,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: M0 (no empezado).
-- Último slice completado: ninguno.
-- Verificado con comandos: nada todavía.
-- Siguiente paso propuesto: resolver el permiso `project` del token de `gh` (ver sección
-  GitHub) y terminar `/bootstrap-github`; después, el primer slice de M0.
+- Milestone: M1 en progreso (M0 cerrado).
+- Último slice completado: M1.1 — `parse_map()` convierte el mapa mínimo
+  (`nb_drones` + `start_hub`/`end_hub`/`connection`) en `Zone`/`Connection`/`FlyInMap`.
+  Solo camino feliz: sin metadatos, sin tipos de zona no-normal, sin validación de
+  duplicados/capacidades — eso llega con sus propios tests en M1.2+.
+- Verificado con comandos: `pytest` (1 passed), `flake8 .` (limpio), `mypy .` con los
+  flags de `make lint` (sin errores, 8 ficheros fuente). `make lint` y `make test`
+  también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: M1.2 — zonas `hub:` regulares (no start/end) y sus
+  coordenadas.
 
 ## Decisiones tomadas
 
@@ -29,24 +34,28 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## GitHub: qué se mueve solo y qué muevo a mano
 
-`/bootstrap-github` se ejecutó parcialmente y quedó **pausado** (2026-07-18):
+`/bootstrap-github` está **completo** (verificado 2026-07-20, corrige el estado
+"pausado" anotado el 2026-07-18 — el bloqueo del scope `project` ya no existe: el token
+actual de `gh` sí lo tiene):
 
-- Hecho: 7 labels creadas (`parser`, `sim`, `pathfinding`, `viz`, `ci`, `docs`, `epic`).
-- Pendiente: Project v2, issues M0/M1, épicas M2-M6, protección de `main`.
-- Bloqueante: `gh project create` falló por falta del scope `project`. El `gh` de este
-  entorno se autentica con un token inyectado (`GITHUB_TOKEN`, tipo GitHub App), no con un
-  login personal — `gh auth refresh -s project` no aplica a ese token. El permiso hay que
-  concedérselo a la app/integración desde su origen (permisos del GitHub App instalado),
-  no desde la terminal.
-- Decisión: pausar el resto del bootstrap hasta resolver el permiso, para no dejar el
-  repo con Project/issues a medias mientras se investiga.
-- Automatizaciones del Project activas: — (Project no creado todavía)
-- Automatizaciones que requieren clics en la web: — (pendiente de retomar)
-- Movimientos manuales que me tocan a mí: revisar permisos del GitHub App instalado en el
-  repo/cuenta y volver a lanzar `/bootstrap-github` cuando esté resuelto.
+- Hecho: 7 labels (`parser`, `sim`, `pathfinding`, `viz`, `ci`, `docs`, `epic`).
+- Hecho: Project v2 "Fly-In" (`PVT_kwHOCIxH9M4BdxIv`), con campo propio
+  `Flyin Milestone` (renombrado de `Milestone`, nombre reservado por GitHub — ver
+  commit `f719986`).
+- Hecho: 18 issues — M0 (#3, #4), M1.1–M1.9 (#5–#13), 2 decisiones abiertas como issues
+  (#14, #15), épicas M2–M6 (#16–#20). Los 18 están en el board, columna `Todo`.
+- Hecho: protección de `main` con `required_status_checks` (`lint`, `test`, strict).
+- Pendiente/decisión abierta: `enforce_admins` está en `false` — como único admin, Jose
+  puede mergear aunque la CI esté en rojo (así se colaron los merges de las PRs #1/#2/#21
+  con CI roja). Decidir si se activa `enforce_admins` una vez el primer slice de M0 deje
+  la CI en verde, para que la protección sea real.
+- Movimientos manuales que le tocan a Jose: ninguno pendiente del bootstrap en sí.
+  Sigue pendiente rellenar `<login>` en `README.md` (dato personal, no soy quien decide
+  el valor).
 
 ## Registro de sesiones (una línea por sesión)
 
 | Fecha | Qué se hizo | Estado al cerrar |
 | --- | --- | --- |
-| — | — | — |
+| 2026-07-20 | Diagnóstico de CI roja (M0 sin código, esperado); verificado que el bootstrap de GitHub ya está completo (estaba mal anotado como pausado); añadido rol de profesor y regla de variables globales a `CLAUDE.md`; versionados subject PDF y maps.tar.gz; renombrado Mario→Jose en todo el repo | M0 no empezado |
+| 2026-07-20 | Slice M1.1: parser del mapa mínimo (`flyin/domain`, `flyin/parsing`); fix de `pyproject.toml` (setuptools confundía `maps/` con un paquete) | CI real en verde (pytest/flake8/mypy) con el primer código del repo |
