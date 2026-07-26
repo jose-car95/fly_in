@@ -66,7 +66,22 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
   llamadas, o `global`/`nonlocal` para compartirlo). El estado vive en atributos de
   instancia o se pasa explícitamente por parámetros/retorno. Esto no incluye constantes
   de módulo inmutables (`UPPER_CASE`, valores fijos como prefijos de parseo o tablas de
-  coste) — esas sí son idiomáticas en Python y no violan la regla.
+  coste) — esas sí son idiomáticas en Python y no violan la regla. NO confundir constante
+  inmutable con variable global mutable: un `UPPER_CASE` o un `Enum` de valores fijos que
+  se asigna una vez y nunca cambia es una constante, está permitido y es defendible tal
+  cual; solo está prohibido el estado de módulo que muta entre llamadas.
+
+## Convenciones de código y documentación
+
+- **Docstrings obligatorios** (el subject los exige) en **estilo Google**: resumen en una
+  línea y, cuando aporten, secciones `Args:`, `Returns:`, `Raises:`, `Attributes:`. Todo
+  módulo, clase pública y función lleva docstring.
+- **Todo el código se comenta en inglés** (identificadores, docstrings y comentarios). El
+  comentario explica el POR QUÉ, no reescribe el QUÉ que el código ya dice.
+- **Ningún `__init__.py` vacío**: cada uno lleva al menos un docstring de paquete que diga
+  qué capa es y hacia dónde apunta su dependencia.
+- Los comentarios/docstrings no repiten lo obvio ni narran el algoritmo línea a línea:
+  documentan contrato, invariantes y decisiones no evidentes.
 
 ## Arquitectura (proyecto obligatorio)
 
