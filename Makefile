@@ -1,30 +1,35 @@
-.PHONY: install run debug clean lint lint-strict type test quality
+.PHONY: install run debug clean fclean re lint lint-strict type test quality
 
 install:
-	python -m pip install -e ".[dev]"
+	uv sync
 
 run:
-	python main.py $(ARGS)
+	uv run python main.py $(ARGS)
 
 debug:
-	python -m pdb main.py $(ARGS)
+	uv run python -m pdb main.py $(ARGS)
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	rm -rf .mypy_cache .pytest_cache .coverage htmlcov
 
+fclean: clean
+	rm -rf .venv build dist ./*.egg-info
+
+re: fclean install
+
 lint:
-	flake8 .
-	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	uv run flake8 .
+	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	flake8 .
-	mypy . --strict
+	uv run flake8 .
+	uv run mypy . --strict
 
 type:
-	mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 test:
-	pytest
+	uv run pytest
 
 quality: lint test
