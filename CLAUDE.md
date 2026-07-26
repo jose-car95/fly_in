@@ -85,17 +85,32 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 
 ## Arquitectura (proyecto obligatorio)
 
-Módulos con dependencias hacia dentro, sin frameworks en el dominio:
+Layout del repo (split decidido 2026-07-26, ver `docs/PROGRESS.md`): la raíz solo
+coordina; cada subproyecto se autogobierna con su propio toolchain.
+
+- `backend/` — todo el Python (paquete `flyin`, `tests/`, `pyproject.toml`,
+  `Makefile` trabajador, `.flake8`). Es el corazón: aquí vive el motor de simulación.
+- `frontend/` — reservada para la futura UI React. Hoy solo un README-puerta; sin código.
+- `Makefile` (raíz) — orquestador fino: delega en `backend/` (y en `frontend/` cuando
+  nazca). No conoce `uv`/`npm` por dentro. `make test` desde la raíz reenvía a `backend`.
+- `docs/`, `maps/`, `scripts/`, `.github/` — a nivel de repo, compartidos.
+
+Módulos del backend, con dependencias hacia dentro, sin frameworks en el dominio:
 
 - `domain` — entidades e invariantes (Zone, Connection, Drone, estados).
-- `parsing` — texto → dominio, con errores por línea.
+- `parsing` — texto → dominio, con errores por línea (es la infraestructura de entrada).
 - `graph` / `pathfinding` — grafo propio y algoritmos de rutas.
 - `scheduling` — reservas de capacidad/tiempo y asignación de rutas.
-- `simulation` — transición de turnos determinista + validador independiente.
-- `cli` — argumentos, salida exacta y visualización coloreada.
+- `simulation` — transición de turnos determinista + validador independiente. Expone el
+  motor reusable `simulate(map, settings) -> SimulationResult`, que NO sabe quién lo
+  llama (CLI, API, tests, React): esa es la costura que mantiene abiertas las extensiones.
+- `cli` — argumentos, salida exacta y visualización coloreada. Primer cliente del motor.
 
-No añadas API, eventos, base de datos, Docker ni frontend de forma especulativa. Si algún
-día se cruza esa frontera, se decide antes y se anota en `docs/PROGRESS.md`.
+**Orden mandatory-first**: primero el CLI obligatorio impecable; la extensión API
+(FastAPI) + frontend (React) es un objetivo de aprendizaje DECIDIDO, pero se implementa
+DESPUÉS y las carpetas internas (`api`, `application`, `visualization`, `shared`) nacen
+cuando el código las justifica, no de forma especulativa. Roadmap de nacimiento de cada
+carpeta en `docs/PROGRESS.md`. No añadas base de datos, Docker ni eventos sin decidirlo antes.
 
 ## Flujo de trabajo: vertical slices
 

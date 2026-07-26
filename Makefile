@@ -1,35 +1,35 @@
-.PHONY: install run debug clean fclean re lint lint-strict type test quality
+# Root orchestrator. It does NOT implement anything itself: each subproject owns
+# its own toolchain and Makefile, and this file only delegates to them.
+#
+#   backend/  -> Python toolchain (uv, pytest, mypy, flake8), see backend/Makefile
+#   frontend/ -> React/npm toolchain (added here when the frontend is born)
+#
+# So `make test` at the repo root runs the backend suite today, and will also run
+# the frontend suite once frontend/ exists — without this file learning how either
+# toolchain works internally.
+
+.PHONY: install run lint lint-strict type test quality clean
 
 install:
-	uv sync
+	$(MAKE) -C backend install
 
 run:
-	uv run python main.py $(ARGS)
-
-debug:
-	uv run python -m pdb main.py $(ARGS)
-
-clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	rm -rf .mypy_cache .pytest_cache .coverage htmlcov
-
-fclean: clean
-	rm -rf .venv build dist ./*.egg-info
-
-re: fclean install
+	$(MAKE) -C backend run ARGS="$(ARGS)"
 
 lint:
-	uv run flake8 .
-	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(MAKE) -C backend lint
 
 lint-strict:
-	uv run flake8 .
-	uv run mypy . --strict
+	$(MAKE) -C backend lint-strict
 
 type:
-	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(MAKE) -C backend type
 
 test:
-	uv run pytest
+	$(MAKE) -C backend test
 
-quality: lint test
+quality:
+	$(MAKE) -C backend quality
+
+clean:
+	$(MAKE) -C backend clean
