@@ -25,6 +25,25 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | — | Self-loops rechazados | No especificados por el subject |
 | — | Salida ordenada por ID de dron ascendente | Determinismo y tests estables |
 | — | Priority = desempate lexicográfico a coste igual | Ver SPEC_NOTES §3 |
+| 2026-07-26 | Split `backend/` + `frontend/` con Makefile orquestador en la raíz | Objetivo de aprendizaje decidido (infra completa backend+frontend); mover cuesta menos con el repo pequeño y solo crece con el tiempo |
+| 2026-07-26 | API (FastAPI) + UI (React) confirmadas como extensión post-mandatory | Aprender REST/frontend de verdad; se hacen DESPUÉS del CLI obligatorio (mandatory-first de 42) |
+
+## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
+
+Las carpetas emergen cuando el código las justifica, no de forma especulativa. La
+frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este mapa:
+
+| Nace en | Carpeta | Por qué nace ahí |
+| --- | --- | --- |
+| M1 (hecho) | `backend/flyin/domain`, `.../parsing` | Entidades puras; entrada texto→dominio |
+| M1.9 | `shared/exceptions.py` | Cuando los errores de parseo se repiten y piden un tipo común |
+| M2 | `pathfinding` | Grafo propio + algoritmos de rutas |
+| M3 | `simulation` (motor `simulate()`) + `cli` | La costura reusable + su primer cliente |
+| M4 | `scheduling` | Reservas de capacidad/tiempo |
+| M5 | `benchmark` | Comparar algoritmos / métricas |
+| Post-mandatory | `api` (FastAPI) | 2º cliente del motor: frontera REST |
+| Post-mandatory | `visualization` | Cuando haya un 2º renderer además del CLI |
+| Último | `frontend/` (React) | Consumir el JSON de la API; cero lógica de negocio |
 
 ## Preguntas abiertas
 
@@ -60,3 +79,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-20 | Diagnóstico de CI roja (M0 sin código, esperado); verificado que el bootstrap de GitHub ya está completo (estaba mal anotado como pausado); añadido rol de profesor y regla de variables globales a `CLAUDE.md`; versionados subject PDF y maps.tar.gz; renombrado Mario→Jose en todo el repo | M0 no empezado |
 | 2026-07-20 | Slice M1.1: parser del mapa mínimo (`flyin/domain`, `flyin/parsing`); fix de `pyproject.toml` (setuptools confundía `maps/` con un paquete) | CI real en verde (pytest/flake8/mypy) con el primer código del repo |
 | 2026-07-26 | Pase de convenciones: docstrings Google style + comentarios en inglés en todo el código, `__init__.py` con docstring de paquete, prefijos de parseo agrupados en `LinePrefix(str, Enum)`; aclarado constante-vs-global en `CLAUDE.md` y añadida sección de convenciones de doc | lint/type/test en verde; sin cambios de comportamiento |
+| 2026-07-26 | Split físico `backend/` + `frontend/`: movido el paquete Python a `backend/` (git mv, historial intacto), Makefile orquestador en la raíz, `frontend/README` puerta; registrada la decisión y el roadmap de carpetas. PR apilada (stacked) sobre la de convenciones | lint/type/test en verde vía orquestador; CI sin cambios (llama a make desde la raíz) |
