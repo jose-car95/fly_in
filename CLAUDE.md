@@ -26,6 +26,29 @@ aprendizaje real.
 - No asumas conocimiento previo de estructuras de datos, complejidad algorítmica o
   arquitectura backend/frontend — pregunta o explica antes de dar por sentado.
 
+### Estilo de explicación (obligatorio, en cualquier chat)
+
+Jose es un estudiante que empieza. Estas reglas de estilo aplican a TODA explicación,
+no solo a las de conceptos grandes:
+
+- **Define cada término técnico la primera vez que aparezca**, en el momento, con una
+  frase sencilla. Incluye el término inglés y su traducción/origen (p. ej. "**parsing**
+  = analizar un texto y convertirlo en objetos, de *to parse*"). Nunca uses jerga
+  (backend, paquete, instancia, commit, linter, refactor…) sin explicarla; si Jose no
+  reconoce una palabra, es un fallo de la explicación, no suyo.
+- **Empieza por el POR QUÉ y el para qué**, luego el cómo. Asume cero conocimiento previo.
+- **Usa analogías del mundo real** para cada concepto abstracto (moldes/galletas para
+  clases, máquina del tiempo para Git, director de orquesta para un orquestador…).
+- **Explica de abajo a arriba y en capas**: primero la idea general, luego el detalle.
+  Trocea; nada de muros de texto sin estructura.
+- **Sé honesto sobre los riesgos de defensa** (qué podría objetar un evaluador de 42) y
+  distingue lo que es norma de lo que es decisión de estilo.
+- Cuando una explicación sea larga o introduzca varios términos, **cierra con un glosario**
+  (tabla "término → una frase") para repasar.
+- Marca los términos clave en **negrita** la primera vez.
+- Al terminar, **invita a preguntar** cualquier término o pieza sin quedar claro: preguntar
+  no es molestar, es el objetivo.
+
 ## Al empezar cada sesión
 
 1. Lee `docs/PROGRESS.md` (estado actual, decisiones, preguntas abiertas).
@@ -45,6 +68,18 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 
 - Python ≥3.10, completamente orientado a objetos y type-safe. `mypy .` y `flake8 .` deben
   pasar sin errores (gates obligatorios antes de dar un slice por terminado).
+- **Full-OOP (el subject lo exige): el comportamiento se modela con clases, no con
+  funciones sueltas a nivel de módulo.** Toda responsabilidad del sistema (parser, grafo,
+  pathfinding, scheduler, simulador, renderers…) vive en una clase con sus métodos; el
+  estado que comparten varios pasos son atributos de instancia (`self`), no parámetros
+  encadenados. Regla práctica para decidir:
+  - **Clase** → hay una responsabilidad con estado, o el diseño/requisito lo pide (caso por
+    defecto en este proyecto). Ej.: `MapParser.parse(text)`.
+  - **Función suelta / método estático** → solo para helpers triviales y sin estado (un
+    cálculo puro de usar y tirar). No meter comportamiento con estado en funciones de
+    módulo solo por comodidad: en la defensa de 42 se lee como "no está orientado a objetos".
+  Las `@dataclass` de dominio son objetos válidos; a medida que ganen comportamiento propio
+  (invariantes, validación) se les añaden métodos en lugar de funciones externas.
 - Prohibido networkx, graphlib o cualquier librería de grafos/pathfinding.
 - Coste de movimiento según el **destino**: normal/priority = 1 turno, restricted = 2,
   blocked = intransitable.
