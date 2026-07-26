@@ -27,6 +27,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | — | Priority = desempate lexicográfico a coste igual | Ver SPEC_NOTES §3 |
 | 2026-07-26 | Split `backend/` + `frontend/` con Makefile orquestador en la raíz | Objetivo de aprendizaje decidido (infra completa backend+frontend); mover cuesta menos con el repo pequeño y solo crece con el tiempo |
 | 2026-07-26 | API (FastAPI) + UI (React) confirmadas como extensión post-mandatory | Aprender REST/frontend de verdad; se hacen DESPUÉS del CLI obligatorio (mandatory-first de 42) |
+| 2026-07-26 | Full-OOP: el comportamiento va en clases, no en funciones sueltas. Parser → clase `MapParser` (refactor pendiente) | El subject exige OOP explícito; funciones de módulo con estado son un riesgo en el peer review. Regla fina en `CLAUDE.md` |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
