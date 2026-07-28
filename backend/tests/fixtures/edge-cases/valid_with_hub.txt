@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: a regular intermediate `hub:` plus `[...]` metadata brackets on
+# every zone line, which M1.2 must ignore (metadata is parsed in M1.4).
+nb_drones: 2
+start_hub: start 0 0 [color=green]
+hub: junction 1 0 [color=yellow max_drones=2]
+end_hub: goal 2 0 [color=green]
+connection: start-junction
+connection: junction-goal

@@ -6,15 +6,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.1 — `parse_map()` convierte el mapa mínimo
-  (`nb_drones` + `start_hub`/`end_hub`/`connection`) en `Zone`/`Connection`/`FlyInMap`.
-  Solo camino feliz: sin metadatos, sin tipos de zona no-normal, sin validación de
-  duplicados/capacidades — eso llega con sus propios tests en M1.2+.
-- Verificado con comandos: `pytest` (1 passed), `flake8 .` (limpio), `mypy .` con los
-  flags de `make lint` (sin errores, 8 ficheros fuente). `make lint` y `make test`
-  también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.2 — zonas `hub:` regulares (no start/end) y sus
-  coordenadas.
+- Último slice completado: M1.2 — `MapParser` lee zonas `hub:` intermedias (no
+  start/end) como `Zone` NORMAL con sus coordenadas enteras. Los metadatos en
+  corchetes `[...]` de CUALQUIER línea de zona se ignoran (se leen los 3 primeros
+  trozos: nombre, x, y); esto además arregla la deuda de M1.1, que reventaba con
+  `start_hub`/`end_hub` seguidos de `[...]`. Interpretar los metadatos es M1.4.
+- Verificado con comandos: `pytest` (2 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
+  y `make test` también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: M1.3 — comentarios/blancos y números de línea físicos
+  (1-based) en los errores de parseo.
 
 ## Decisiones tomadas
 
@@ -29,6 +30,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-07-26 | API (FastAPI) + UI (React) confirmadas como extensión post-mandatory | Aprender REST/frontend de verdad; se hacen DESPUÉS del CLI obligatorio (mandatory-first de 42) |
 | 2026-07-26 | Full-OOP: el comportamiento va en clases, no en funciones sueltas. Parser → clase `MapParser` (hecho) | El subject exige OOP explícito; funciones de módulo con estado son un riesgo en el peer review. Regla fina en `CLAUDE.md` |
 | 2026-07-26 | `MapParser`: texto en el constructor, `parse()` sin args (una instancia = un parseo) | Prepara el estado de instancia para números de línea en errores (M1.3); reutilizar la instancia ensuciaría estado, así que es de un solo uso |
+| 2026-07-28 | M1.2: los metadatos `[...]` de las líneas de zona se IGNORAN, no se rechazan | Todos los mapas oficiales los llevan; rechazarlos bloquearía el parseo. Se interpretan en M1.4 con sus propios tests |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -84,3 +86,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-26 | Split físico `backend/` + `frontend/`: movido el paquete Python a `backend/` (git mv, historial intacto), Makefile orquestador en la raíz, `frontend/README` puerta; registrada la decisión y el roadmap de carpetas. PR apilada (stacked) sobre la de convenciones | lint/type/test en verde vía orquestador; CI sin cambios (llama a make desde la raíz) |
 | 2026-07-26 | Reglas full-OOP y estilo de enseñanza en `CLAUDE.md` (#29). Refactor del parser a clase `MapParser` (texto en constructor, `parse()`); test actualizado a la nueva interfaz | lint/type/test en verde; refactor sin cambios de comportamiento |
 | 2026-07-28 | Norma de 42: límite duro de 79 caracteres por línea. `flake8` `max-line-length = 79`, reformateado `map_parser.py`/`connection.py`, regla no negociable añadida a `CLAUDE.md`. Va en la PR #30 | lint/type/test en verde; sin cambios de comportamiento |
+| 2026-07-28 | Slice M1.2 (#6): `hub:` intermedios → `Zone` NORMAL; `_parse_zone` toma los 3 primeros trozos e ignora los metadatos `[...]` (arregla la deuda de M1.1 con corchetes en start/end); fixture `valid_with_hub.txt` | pytest 2 passed, lint/type en verde |
