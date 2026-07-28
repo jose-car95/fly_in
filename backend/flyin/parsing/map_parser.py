@@ -1,10 +1,10 @@
 """Parse Fly-In map files into domain objects.
 
-This module turns the raw text of a map file into a :class:`FlyInMap`. It only
-covers the minimal happy path for now (``nb_drones`` plus one ``start_hub``, one
-``end_hub`` and their connections); intermediate ``hub:`` lines, metadata,
-capacities and duplicate/self-loop validation arrive in later slices, each with
-its own failing test first.
+This module turns the raw text of a map file into a :class:`FlyInMap`. It
+only covers the minimal happy path for now (``nb_drones`` plus one
+``start_hub``, one ``end_hub`` and their connections); intermediate
+``hub:`` lines, metadata, capacities and duplicate/self-loop validation
+arrive in later slices, each with its own failing test first.
 """
 
 from enum import Enum
@@ -45,7 +45,8 @@ class MapParser:
         """Store the raw map text to be parsed.
 
         Args:
-            text: Raw contents of a map file, comments and blank lines included.
+            text: Raw contents of a map file, with comments and blank lines
+                included.
         """
         self._text = text
 
@@ -57,8 +58,9 @@ class MapParser:
             hubs exposed directly.
 
         Raises:
-            ValueError: If the first significant line is not ``nb_drones:``, or
-                if the map does not declare exactly one start hub and one end hub.
+            ValueError: If the first significant line is not ``nb_drones:``,
+                or if the map does not declare exactly one start hub and one
+                end hub.
         """
         lines = self._significant_lines()
 
@@ -70,7 +72,9 @@ class MapParser:
 
         for line in lines[1:]:
             if line.startswith(LinePrefix.START_HUB):
-                start = self._parse_zone(line, LinePrefix.START_HUB, is_start=True)
+                start = self._parse_zone(
+                    line, LinePrefix.START_HUB, is_start=True
+                )
                 zones[start.name] = start
             elif line.startswith(LinePrefix.END_HUB):
                 end = self._parse_zone(line, LinePrefix.END_HUB, is_end=True)
@@ -79,7 +83,9 @@ class MapParser:
                 connections.append(self._parse_connection(line))
 
         if start is None or end is None:
-            raise ValueError("map must declare exactly one start_hub and one end_hub")
+            raise ValueError(
+                "map must declare exactly one start_hub and one end_hub"
+            )
 
         return FlyInMap(
             nb_drones=nb_drones,
@@ -92,15 +98,20 @@ class MapParser:
     def _significant_lines(self) -> list[str]:
         """Return the meaningful lines of the map, stripped of noise.
 
-        Blank lines and full-line comments (starting with ``#``) are dropped, so
-        the first entry is always ``nb_drones:`` in a well-formed map.
+        Blank lines and full-line comments (starting with ``#``) are
+        dropped, so the first entry is always ``nb_drones:`` in a
+        well-formed map.
 
         Returns:
             The non-empty, non-comment lines, each stripped of surrounding
             whitespace and kept in their original order.
         """
         stripped = (line.strip() for line in self._text.splitlines())
-        return [line for line in stripped if line and not line.startswith("#")]
+        return [
+            line
+            for line in stripped
+            if line and not line.startswith("#")
+        ]
 
     def _parse_nb_drones(self, line: str) -> int:
         """Parse the ``nb_drones:`` line into the number of drones.
@@ -115,11 +126,19 @@ class MapParser:
             ValueError: If the line does not start with ``nb_drones:``.
         """
         if not line.startswith(LinePrefix.NB_DRONES):
-            raise ValueError(f"expected 'nb_drones:' as the first significant line, got: {line!r}")
+            raise ValueError(
+                f"expected 'nb_drones:' as the first significant line, "
+                f"got: {line!r}"
+            )
         return int(line.removeprefix(LinePrefix.NB_DRONES).strip())
 
     def _parse_zone(
-        self, line: str, prefix: LinePrefix, *, is_start: bool = False, is_end: bool = False
+        self,
+        line: str,
+        prefix: LinePrefix,
+        *,
+        is_start: bool = False,
+        is_end: bool = False,
     ) -> Zone:
         """Parse a hub line (``<prefix> <name> <x> <y>``) into a :class:`Zone`.
 
@@ -133,7 +152,13 @@ class MapParser:
             The zone described by the line.
         """
         name, x_str, y_str = line.removeprefix(prefix).split()
-        return Zone(name=name, x=int(x_str), y=int(y_str), is_start=is_start, is_end=is_end)
+        return Zone(
+            name=name,
+            x=int(x_str),
+            y=int(y_str),
+            is_start=is_start,
+            is_end=is_end,
+        )
 
     def _parse_connection(self, line: str) -> Connection:
         """Parse a ``connection:`` line (``<zone_a>-<zone_b>``) into a link.
@@ -144,5 +169,6 @@ class MapParser:
         Returns:
             The connection between the two named zones.
         """
-        zone_a, zone_b = line.removeprefix(LinePrefix.CONNECTION).strip().split("-", maxsplit=1)
+        body = line.removeprefix(LinePrefix.CONNECTION).strip()
+        zone_a, zone_b = body.split("-", maxsplit=1)
         return Connection(zone_a=zone_a, zone_b=zone_b)

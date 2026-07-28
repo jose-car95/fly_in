@@ -14,8 +14,8 @@ class Connection:
     Attributes:
         zone_a: Name of one endpoint zone.
         zone_b: Name of the other endpoint zone.
-        max_link_capacity: Declared shared capacity of the link, or ``None`` for
-            the default (1).
+        max_link_capacity: Declared shared capacity of the link, or ``None``
+            for the default (1).
     """
 
     zone_a: str

@@ -68,6 +68,12 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 
 - Python ≥3.10, completamente orientado a objetos y type-safe. `mypy .` y `flake8 .` deben
   pasar sin errores (gates obligatorios antes de dar un slice por terminado).
+- **Límite de 79 caracteres por línea (norma de 42), sin excepciones.** Ninguna línea del
+  código Python del proyecto puede pasar de 79 caracteres (docstrings y comentarios
+  incluidos). Es una regla dura, no una preferencia de estilo: `flake8` lo aplica con
+  `max-line-length = 79` y es un gate obligatorio. Si una línea no cabe, se parte
+  (paréntesis de continuación, argumentos uno por línea, reflow del docstring), nunca se
+  sube el límite ni se silencia con `# noqa`.
 - **Full-OOP (el subject lo exige): el comportamiento se modela con clases, no con
   funciones sueltas a nivel de módulo.** Toda responsabilidad del sistema (parser, grafo,
   pathfinding, scheduler, simulador, renderers…) vive en una clase con sus métodos; el
