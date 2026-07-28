@@ -14,7 +14,7 @@ clean:
 	rm -rf .mypy_cache .pytest_cache .coverage htmlcov
 
 fclean: clean
-	rm -rf .venv build dist ./*.egg-info
+	rm -rf .venv
 
 re: fclean install
 

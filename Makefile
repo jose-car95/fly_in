@@ -1,14 +1,6 @@
-# Root orchestrator. It does NOT implement anything itself: each subproject owns
-# its own toolchain and Makefile, and this file only delegates to them.
-#
-#   backend/  -> Python toolchain (uv, pytest, mypy, flake8), see backend/Makefile
-#   frontend/ -> React/npm toolchain (added here when the frontend is born)
-#
-# So `make test` at the repo root runs the backend suite today, and will also run
-# the frontend suite once frontend/ exists — without this file learning how either
-# toolchain works internally.
+.PHONY: install run lint lint-strict type test quality clean fclean re
 
-.PHONY: install run lint lint-strict type test quality clean
+ROOT_CACHES := .mypy_cache .pytest_cache .coverage htmlcov
 
 install:
 	$(MAKE) -C backend install
@@ -33,3 +25,10 @@ quality:
 
 clean:
 	$(MAKE) -C backend clean
+	rm -rf $(ROOT_CACHES)
+
+fclean:
+	$(MAKE) -C backend fclean
+	rm -rf $(ROOT_CACHES) .venv
+
+re: fclean install
