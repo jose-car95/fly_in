@@ -18,3 +18,16 @@ def test_parses_minimal_map() -> None:
     assert len(result.connections) == 1
     assert result.connections[0].zone_a == "start"
     assert result.connections[0].zone_b == "goal"
+
+
+def test_parses_regular_hub_ignoring_metadata() -> None:
+    text = (FIXTURES_DIR / "valid_with_hub.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    # A regular `hub:` becomes a NORMAL, non-terminal zone (Zone defaults),
+    # and the trailing `[...]` metadata is ignored until M1.4.
+    assert result.zones["junction"] == Zone(name="junction", x=1, y=0)
+    # start/end lines also carry metadata brackets that must not break parsing.
+    assert result.start == Zone(name="start", x=0, y=0, is_start=True)
+    assert result.end == Zone(name="goal", x=2, y=0, is_end=True)

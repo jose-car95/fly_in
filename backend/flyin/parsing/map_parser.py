@@ -27,6 +27,7 @@ class LinePrefix(str, Enum):
     NB_DRONES = "nb_drones:"
     START_HUB = "start_hub:"
     END_HUB = "end_hub:"
+    HUB = "hub:"
     CONNECTION = "connection:"
 
 
@@ -79,6 +80,9 @@ class MapParser:
             elif line.startswith(LinePrefix.END_HUB):
                 end = self._parse_zone(line, LinePrefix.END_HUB, is_end=True)
                 zones[end.name] = end
+            elif line.startswith(LinePrefix.HUB):
+                hub = self._parse_zone(line, LinePrefix.HUB)
+                zones[hub.name] = hub
             elif line.startswith(LinePrefix.CONNECTION):
                 connections.append(self._parse_connection(line))
 
@@ -142,6 +146,10 @@ class MapParser:
     ) -> Zone:
         """Parse a hub line (``<prefix> <name> <x> <y>``) into a :class:`Zone`.
 
+        Only the name and the two integer coordinates are read. Any trailing
+        tokens (the ``[...]`` metadata block) are ignored for now; parsing
+        them into zone type/capacity is a later slice (M1.4).
+
         Args:
             line: The full hub line to parse.
             prefix: The prefix tag to strip before reading the fields.
@@ -151,7 +159,7 @@ class MapParser:
         Returns:
             The zone described by the line.
         """
-        name, x_str, y_str = line.removeprefix(prefix).split()
+        name, x_str, y_str, *_ = line.removeprefix(prefix).split()
         return Zone(
             name=name,
             x=int(x_str),
