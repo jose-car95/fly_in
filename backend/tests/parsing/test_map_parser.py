@@ -70,3 +70,18 @@ def test_parses_max_drones_ignoring_terminals() -> None:
     # max_drones on start/end is ignored: terminals are unlimited.
     assert result.start.max_drones is None
     assert result.end.max_drones is None
+
+
+def test_parses_link_capacity_and_clean_endpoints() -> None:
+    text = (FIXTURES_DIR / "valid_link_capacity.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    start_mid, mid_goal = result.connections
+    # The [...] block must not leak into the endpoint names.
+    assert start_mid.zone_a == "start"
+    assert start_mid.zone_b == "mid"
+    assert start_mid.max_link_capacity == 3
+    # No tag → None (the default-1 sentinel).
+    assert mid_goal.zone_b == "goal"
+    assert mid_goal.max_link_capacity is None

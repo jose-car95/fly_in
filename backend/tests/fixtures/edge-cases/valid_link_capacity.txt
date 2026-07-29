@@ -1,0 +1,10 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_link_capacity= sets a connection's capacity; without the tag it
+# stays None (default 1). The [...] block must NOT leak into the zone names
+# (a regression M1.2 left open: connection metadata bled into zone_b).
+nb_drones: 2
+start_hub: start 0 0
+hub: mid 1 0
+end_hub: goal 2 0
+connection: start-mid [max_link_capacity=3]
+connection: mid-goal

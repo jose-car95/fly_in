@@ -6,15 +6,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.4b — `max_drones=` fija la capacidad de una zona regular;
-  en start/end se IGNORA (terminales ilimitados) y sin tag queda `None` (default 1).
-  `_parse_zone` usa `is_terminal = is_start or is_end` para descartarlo en terminales.
-  El test de M1.2 se actualizó (ahora `junction` afirma `max_drones=2`, ya no se
-  ignora). `color` sigue sin consumirse (M1.4c–d); claves desconocidas → M1.4e.
-- Verificado con comandos: `pytest` (5 passed), `flake8 .` (limpio, límite 79),
+- Último slice completado: M1.4c — `max_link_capacity=` fija la capacidad de una
+  conexión (sin tag → `None`, default 1). Se arregla la deuda de M1.2: los extremos se
+  leen del texto ANTES del `[`, así el bloque `[...]` ya no se cuela en `zone_b`. Nuevo
+  helper `_optional_int(metadata, key)` reutilizado por `max_drones` y
+  `max_link_capacity`. Falta `color` (M1.4d) y claves desconocidas (M1.4e).
+- Verificado con comandos: `pytest` (6 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
   y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.4c — `max_link_capacity=` (capacidad de conexión).
+- Siguiente paso propuesto: M1.4d — `color=` (decidir si se guarda para la
+  visualización de M6 o se ignora; hoy no hay campo `color` en el dominio).
 
 ## Decisiones tomadas
 
@@ -90,3 +91,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-29 | Slice M1.3 (#7): números de línea físicos 1-based en errores. `_significant_lines` → pares `(línea, texto)` con `enumerate`+morsa; error de `nb_drones` con `line N:`; fixture `invalid_missing_nb_drones.txt` | pytest 3 passed, lint/type en verde |
 | 2026-07-29 | Slice M1.4a (#8, parte 1/5): `zone=` → `ZoneType` con default `normal` y orden libre; helper `_parse_metadata` (bloque `[...]` → dict); `color`/`max_drones` aún ignorados; fixture `valid_zone_types.txt` | pytest 4 passed, lint/type en verde |
 | 2026-07-29 | Slice M1.4b (#8, parte 2/5): `max_drones=` → capacidad de zona, ignorado en terminales; test de M1.2 actualizado a `max_drones=2`; fixture `valid_zone_capacity.txt` | pytest 5 passed, lint/type en verde |
+| 2026-07-29 | Slice M1.4c (#8, parte 3/5): `max_link_capacity=` → capacidad de conexión; arreglada la deuda de M1.2 (extremos leídos antes del `[`); helper `_optional_int` reutilizado; fixture `valid_link_capacity.txt` | pytest 6 passed, lint/type en verde |
