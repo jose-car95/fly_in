@@ -11,7 +11,7 @@ from enum import Enum
 
 from flyin.domain.connection import Connection
 from flyin.domain.fly_in_map import FlyInMap
-from flyin.domain.zone import Zone
+from flyin.domain.zone import Zone, ZoneType
 
 
 class LinePrefix(str, Enum):
@@ -150,9 +150,10 @@ class MapParser:
     ) -> Zone:
         """Parse a hub line (``<prefix> <name> <x> <y>``) into a :class:`Zone`.
 
-        Only the name and the two integer coordinates are read. Any trailing
-        tokens (the ``[...]`` metadata block) are ignored for now; parsing
-        them into zone type/capacity is a later slice (M1.4).
+        Reads the name, the two integer coordinates and the ``zone=`` tag,
+        which defaults to ``normal`` when absent. Other tags (``color``,
+        ``max_drones``) are ignored in this slice; consuming them is a later
+        M1.4 step.
 
         Args:
             line: The full hub line to parse.
@@ -164,13 +165,42 @@ class MapParser:
             The zone described by the line.
         """
         name, x_str, y_str, *_ = line.removeprefix(prefix).split()
+        metadata = self._parse_metadata(line)
+        zone_type = ZoneType(metadata.get("zone", "normal"))
         return Zone(
             name=name,
             x=int(x_str),
             y=int(y_str),
+            zone_type=zone_type,
             is_start=is_start,
             is_end=is_end,
         )
+
+    def _parse_metadata(self, line: str) -> dict[str, str]:
+        """Parse the ``[key=value ...]`` block of a line into a mapping.
+
+        Tags may appear in any order, so they are keyed by name rather than by
+        position; a line with no bracket block yields an empty mapping. Only
+        the raw string values are returned — turning them into zone types,
+        capacities, etc. is each caller's job.
+
+        Args:
+            line: The full map line, brackets included.
+
+        Returns:
+            A ``{key: value}`` mapping for the tags inside the brackets, empty
+            when the line carries no ``[...]`` block.
+        """
+        open_bracket = line.find("[")
+        if open_bracket == -1:
+            return {}
+        close_bracket = line.find("]", open_bracket)
+        body = line[open_bracket + 1:close_bracket]
+        metadata: dict[str, str] = {}
+        for token in body.split():
+            key, value = token.split("=", maxsplit=1)
+            metadata[key] = value
+        return metadata
 
     def _parse_connection(self, line: str) -> Connection:
         """Parse a ``connection:`` line (``<zone_a>-<zone_b>``) into a link.

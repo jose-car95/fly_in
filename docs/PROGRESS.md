@@ -6,17 +6,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.3 — números de línea físicos (1-based) en los errores
-  de parseo. `_significant_lines` devuelve pares `(línea_física, texto)` (numera con
-  `enumerate(..., start=1)` sobre el texto completo y filtra con el operador morsa),
-  así el error de `nb_drones` dice `line N: ...` apuntando a la línea real del
-  fichero. Comentarios/blancos ya se ignoraban desde M1.1. Errores por-línea de
-  zonas/conexiones malformadas y mapa vacío son M1.9.
-- Verificado con comandos: `pytest` (3 passed), `flake8 .` (limpio, límite 79),
+- Último slice completado: M1.4a — metadatos de zona `zone=` → `ZoneType`, con default
+  `normal` y orden libre de tags. Nuevo helper `_parse_metadata(line)` extrae el bloque
+  `[...]` a un diccionario `{clave: valor}`; `_parse_zone` lee `zone=` con
+  `ZoneType(metadata.get("zone", "normal"))`. `color`/`max_drones` se ignoran aún (se
+  consumen en M1.4b–d); rechazar claves desconocidas es M1.4e.
+- Verificado con comandos: `pytest` (4 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
   y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.4 — metadatos `[...]` (tipo de zona, capacidades,
-  color), valores por defecto y orden libre de tags.
+- Siguiente paso propuesto: M1.4b — `max_drones=` (capacidad de zona) con la regla de
+  ignorarlo en terminales.
 
 ## Decisiones tomadas
 
@@ -90,3 +89,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-28 | Slice M1.2 (#6): `hub:` intermedios → `Zone` NORMAL; `_parse_zone` toma los 3 primeros trozos e ignora los metadatos `[...]` (arregla la deuda de M1.1 con corchetes en start/end); fixture `valid_with_hub.txt` | pytest 2 passed, lint/type en verde |
 | 2026-07-28 | Root Makefile de dos niveles (`clean`/`fclean` barren la raíz además de delegar en backend) + regla `re`; quitados `build`/`dist`/`egg-info` de ambos fclean (nunca se generan con `package = false`); estilo escueto sin comentarios (#32) | `make re` + `make quality` en verde desde cero |
 | 2026-07-29 | Slice M1.3 (#7): números de línea físicos 1-based en errores. `_significant_lines` → pares `(línea, texto)` con `enumerate`+morsa; error de `nb_drones` con `line N:`; fixture `invalid_missing_nb_drones.txt` | pytest 3 passed, lint/type en verde |
+| 2026-07-29 | Slice M1.4a (#8, parte 1/5): `zone=` → `ZoneType` con default `normal` y orden libre; helper `_parse_metadata` (bloque `[...]` → dict); `color`/`max_drones` aún ignorados; fixture `valid_zone_types.txt` | pytest 4 passed, lint/type en verde |

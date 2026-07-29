@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from flyin.domain.zone import Zone
+from flyin.domain.zone import Zone, ZoneType
 from flyin.parsing.map_parser import MapParser
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "edge-cases"
@@ -42,3 +42,16 @@ def test_error_reports_physical_line_number() -> None:
     # blank line precede it); the error must point there, not at line 1.
     with pytest.raises(ValueError, match=r"line 6"):
         MapParser(text).parse()
+
+
+def test_parses_zone_type_metadata_in_any_order() -> None:
+    text = (FIXTURES_DIR / "valid_zone_types.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    assert result.zones["slow"].zone_type is ZoneType.RESTRICTED
+    # zone= after color= proves the tag order does not matter.
+    assert result.zones["fast"].zone_type is ZoneType.PRIORITY
+    # No zone= tag (only color/max_drones) falls back to the NORMAL default.
+    assert result.zones["plain"].zone_type is ZoneType.NORMAL
+    assert result.start.zone_type is ZoneType.NORMAL
