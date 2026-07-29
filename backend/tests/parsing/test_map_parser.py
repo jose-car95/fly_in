@@ -22,14 +22,16 @@ def test_parses_minimal_map() -> None:
     assert result.connections[0].zone_b == "goal"
 
 
-def test_parses_regular_hub_ignoring_metadata() -> None:
+def test_parses_regular_hub_with_metadata() -> None:
     text = (FIXTURES_DIR / "valid_with_hub.txt").read_text()
 
     result = MapParser(text).parse()
 
-    # A regular `hub:` becomes a NORMAL, non-terminal zone (Zone defaults),
-    # and the trailing `[...]` metadata is ignored until M1.4.
-    assert result.zones["junction"] == Zone(name="junction", x=1, y=0)
+    # A regular `hub:` is a non-terminal zone; its max_drones tag is parsed
+    # (M1.4b) and it stays NORMAL since it carries no zone= tag.
+    assert result.zones["junction"] == Zone(
+        name="junction", x=1, y=0, max_drones=2
+    )
     # start/end lines also carry metadata brackets that must not break parsing.
     assert result.start == Zone(name="start", x=0, y=0, is_start=True)
     assert result.end == Zone(name="goal", x=2, y=0, is_end=True)
@@ -55,3 +57,16 @@ def test_parses_zone_type_metadata_in_any_order() -> None:
     # No zone= tag (only color/max_drones) falls back to the NORMAL default.
     assert result.zones["plain"].zone_type is ZoneType.NORMAL
     assert result.start.zone_type is ZoneType.NORMAL
+
+
+def test_parses_max_drones_ignoring_terminals() -> None:
+    text = (FIXTURES_DIR / "valid_zone_capacity.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    assert result.zones["narrow"].max_drones == 2
+    # No max_drones tag stays None (the default-1 sentinel).
+    assert result.zones["wide"].max_drones is None
+    # max_drones on start/end is ignored: terminals are unlimited.
+    assert result.start.max_drones is None
+    assert result.end.max_drones is None
