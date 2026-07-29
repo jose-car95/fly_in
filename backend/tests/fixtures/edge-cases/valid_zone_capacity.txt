@@ -1,0 +1,12 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_drones= sets a regular zone's capacity; on start/end hubs it is
+# ignored (terminals are unlimited). A zone with no max_drones stays None,
+# which means the default (1) in later slices.
+nb_drones: 3
+start_hub: start 0 0 [max_drones=9]
+hub: narrow 1 0 [max_drones=2]
+hub: wide 2 0 [zone=priority]
+end_hub: goal 3 0 [max_drones=7]
+connection: start-narrow
+connection: narrow-wide
+connection: wide-goal
