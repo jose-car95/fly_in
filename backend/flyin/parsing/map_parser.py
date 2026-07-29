@@ -71,7 +71,7 @@ class MapParser:
         start: Zone | None = None
         end: Zone | None = None
 
-        for line in lines[1:]:
+        for _, line in lines[1:]:
             if line.startswith(LinePrefix.START_HUB):
                 start = self._parse_zone(
                     line, LinePrefix.START_HUB, is_start=True
@@ -99,29 +99,32 @@ class MapParser:
             end=end,
         )
 
-    def _significant_lines(self) -> list[str]:
-        """Return the meaningful lines of the map, stripped of noise.
+    def _significant_lines(self) -> list[tuple[int, str]]:
+        """Return the meaningful lines paired with their physical line number.
 
-        Blank lines and full-line comments (starting with ``#``) are
-        dropped, so the first entry is always ``nb_drones:`` in a
-        well-formed map.
+        Blank lines and full-line comments (starting with ``#``) are dropped,
+        so the first entry is always ``nb_drones:`` in a well-formed map. Each
+        kept line carries its 1-based position in the original file (counting
+        the dropped comments and blanks), so parse errors can point at the
+        physical line the user sees in their editor.
 
         Returns:
-            The non-empty, non-comment lines, each stripped of surrounding
-            whitespace and kept in their original order.
+            ``(physical_line_number, text)`` pairs for the non-empty,
+            non-comment lines, each stripped of surrounding whitespace and
+            kept in their original order.
         """
-        stripped = (line.strip() for line in self._text.splitlines())
         return [
-            line
-            for line in stripped
-            if line and not line.startswith("#")
+            (lineno, stripped)
+            for lineno, raw in enumerate(self._text.splitlines(), start=1)
+            if (stripped := raw.strip()) and not stripped.startswith("#")
         ]
 
-    def _parse_nb_drones(self, line: str) -> int:
+    def _parse_nb_drones(self, numbered_line: tuple[int, str]) -> int:
         """Parse the ``nb_drones:`` line into the number of drones.
 
         Args:
-            line: The first significant line of the map.
+            numbered_line: The first significant line as a
+                ``(physical_line_number, text)`` pair.
 
         Returns:
             The declared number of drones.
@@ -129,10 +132,11 @@ class MapParser:
         Raises:
             ValueError: If the line does not start with ``nb_drones:``.
         """
+        lineno, line = numbered_line
         if not line.startswith(LinePrefix.NB_DRONES):
             raise ValueError(
-                f"expected 'nb_drones:' as the first significant line, "
-                f"got: {line!r}"
+                f"line {lineno}: expected 'nb_drones:' as the first "
+                f"significant line, got: {line!r}"
             )
         return int(line.removeprefix(LinePrefix.NB_DRONES).strip())
 

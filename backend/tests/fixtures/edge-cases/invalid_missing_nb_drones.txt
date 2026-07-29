@@ -1,0 +1,8 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: the required nb_drones header is missing. These four comment lines
+# and the blank line below push the first significant line down to physical
+# line 6, so the parse error must report line 6 (physical, 1-based), not 1.
+
+start_hub: start 0 0
+end_hub: goal 1 0
+connection: start-goal
