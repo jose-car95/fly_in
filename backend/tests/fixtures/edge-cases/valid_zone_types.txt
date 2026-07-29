@@ -1,0 +1,14 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: the zone= tag sets the zone type in ANY tag order; a zone with no
+# zone= tag defaults to normal. Other tags (color, max_drones) are ignored in
+# this slice (M1.4a), so their presence must not affect the zone type.
+nb_drones: 3
+start_hub: start 0 0 [color=green]
+hub: slow 1 0 [zone=restricted color=red]
+hub: fast 2 0 [color=blue zone=priority]
+hub: plain 3 0 [color=yellow max_drones=2]
+end_hub: goal 4 0 [color=green]
+connection: start-slow
+connection: slow-fast
+connection: fast-plain
+connection: plain-goal
