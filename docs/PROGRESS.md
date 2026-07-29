@@ -6,16 +6,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.2 — `MapParser` lee zonas `hub:` intermedias (no
-  start/end) como `Zone` NORMAL con sus coordenadas enteras. Los metadatos en
-  corchetes `[...]` de CUALQUIER línea de zona se ignoran (se leen los 3 primeros
-  trozos: nombre, x, y); esto además arregla la deuda de M1.1, que reventaba con
-  `start_hub`/`end_hub` seguidos de `[...]`. Interpretar los metadatos es M1.4.
-- Verificado con comandos: `pytest` (2 passed), `flake8 .` (limpio, límite 79),
+- Último slice completado: M1.3 — números de línea físicos (1-based) en los errores
+  de parseo. `_significant_lines` devuelve pares `(línea_física, texto)` (numera con
+  `enumerate(..., start=1)` sobre el texto completo y filtra con el operador morsa),
+  así el error de `nb_drones` dice `line N: ...` apuntando a la línea real del
+  fichero. Comentarios/blancos ya se ignoraban desde M1.1. Errores por-línea de
+  zonas/conexiones malformadas y mapa vacío son M1.9.
+- Verificado con comandos: `pytest` (3 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
   y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.3 — comentarios/blancos y números de línea físicos
-  (1-based) en los errores de parseo.
+- Siguiente paso propuesto: M1.4 — metadatos `[...]` (tipo de zona, capacidades,
+  color), valores por defecto y orden libre de tags.
 
 ## Decisiones tomadas
 
@@ -87,3 +88,5 @@ actual de `gh` sí lo tiene):
 | 2026-07-26 | Reglas full-OOP y estilo de enseñanza en `CLAUDE.md` (#29). Refactor del parser a clase `MapParser` (texto en constructor, `parse()`); test actualizado a la nueva interfaz | lint/type/test en verde; refactor sin cambios de comportamiento |
 | 2026-07-28 | Norma de 42: límite duro de 79 caracteres por línea. `flake8` `max-line-length = 79`, reformateado `map_parser.py`/`connection.py`, regla no negociable añadida a `CLAUDE.md`. Va en la PR #30 | lint/type/test en verde; sin cambios de comportamiento |
 | 2026-07-28 | Slice M1.2 (#6): `hub:` intermedios → `Zone` NORMAL; `_parse_zone` toma los 3 primeros trozos e ignora los metadatos `[...]` (arregla la deuda de M1.1 con corchetes en start/end); fixture `valid_with_hub.txt` | pytest 2 passed, lint/type en verde |
+| 2026-07-28 | Root Makefile de dos niveles (`clean`/`fclean` barren la raíz además de delegar en backend) + regla `re`; quitados `build`/`dist`/`egg-info` de ambos fclean (nunca se generan con `package = false`); estilo escueto sin comentarios (#32) | `make re` + `make quality` en verde desde cero |
+| 2026-07-29 | Slice M1.3 (#7): números de línea físicos 1-based en errores. `_significant_lines` → pares `(línea, texto)` con `enumerate`+morsa; error de `nb_drones` con `line N:`; fixture `invalid_missing_nb_drones.txt` | pytest 3 passed, lint/type en verde |

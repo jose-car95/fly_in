@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from flyin.domain.zone import Zone
 from flyin.parsing.map_parser import MapParser
 
@@ -31,3 +33,12 @@ def test_parses_regular_hub_ignoring_metadata() -> None:
     # start/end lines also carry metadata brackets that must not break parsing.
     assert result.start == Zone(name="start", x=0, y=0, is_start=True)
     assert result.end == Zone(name="goal", x=2, y=0, is_end=True)
+
+
+def test_error_reports_physical_line_number() -> None:
+    text = (FIXTURES_DIR / "invalid_missing_nb_drones.txt").read_text()
+
+    # The first significant line sits at physical line 6 (four comments plus a
+    # blank line precede it); the error must point there, not at line 1.
+    with pytest.raises(ValueError, match=r"line 6"):
+        MapParser(text).parse()
