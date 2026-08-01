@@ -96,7 +96,7 @@ class MapParser:
             zones=zones,
             connections=connections,
             start=start,
-            end=end,
+            end=end
         )
 
     def _significant_lines(self) -> list[tuple[int, str]]:
@@ -146,7 +146,7 @@ class MapParser:
         prefix: LinePrefix,
         *,
         is_start: bool = False,
-        is_end: bool = False,
+        is_end: bool = False
     ) -> Zone:
         """Parse a hub line (``<prefix> <name> <x> <y>``) into a :class:`Zone`.
 
@@ -181,7 +181,7 @@ class MapParser:
             zone_type=zone_type,
             max_drones=max_drones,
             is_start=is_start,
-            is_end=is_end,
+            is_end=is_end
         )
 
     def _parse_metadata(self, line: str) -> dict[str, str]:
@@ -247,5 +247,5 @@ class MapParser:
             zone_b=zone_b,
             max_link_capacity=self._optional_int(
                 metadata, "max_link_capacity"
-            ),
+            )
         )
