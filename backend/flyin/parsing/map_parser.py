@@ -170,9 +170,9 @@ class MapParser:
         zone_type = ZoneType(metadata.get("zone", "normal"))
         is_terminal = is_start or is_end
         max_drones = (
-            int(metadata["max_drones"])
-            if "max_drones" in metadata and not is_terminal
-            else None
+            None
+            if is_terminal
+            else self._optional_int(metadata, "max_drones")
         )
         return Zone(
             name=name,
@@ -210,8 +210,27 @@ class MapParser:
             metadata[key] = value
         return metadata
 
+    def _optional_int(self, metadata: dict[str, str], key: str) -> int | None:
+        """Read an optional integer tag from parsed metadata.
+
+        Args:
+            metadata: The parsed ``{key: value}`` tag mapping.
+            key: The tag name to read.
+
+        Returns:
+            The tag's integer value, or ``None`` when the tag is absent (which
+            downstream code treats as the default of 1).
+        """
+        value = metadata.get(key)
+        return int(value) if value is not None else None
+
     def _parse_connection(self, line: str) -> Connection:
-        """Parse a ``connection:`` line (``<zone_a>-<zone_b>``) into a link.
+        """Parse a ``connection:`` line into a link.
+
+        The line is ``<zone_a>-<zone_b>`` optionally followed by a
+        ``[max_link_capacity=...]`` block. The endpoints are read from the text
+        before the brackets, so metadata never leaks into a zone name, and the
+        capacity defaults to ``None`` (meaning 1) when the tag is absent.
 
         Args:
             line: The full connection line to parse.
@@ -219,6 +238,14 @@ class MapParser:
         Returns:
             The connection between the two named zones.
         """
-        body = line.removeprefix(LinePrefix.CONNECTION).strip()
-        zone_a, zone_b = body.split("-", maxsplit=1)
-        return Connection(zone_a=zone_a, zone_b=zone_b)
+        metadata = self._parse_metadata(line)
+        endpoints = line.removeprefix(LinePrefix.CONNECTION)
+        endpoints = endpoints.split("[", maxsplit=1)[0].strip()
+        zone_a, zone_b = endpoints.split("-", maxsplit=1)
+        return Connection(
+            zone_a=zone_a,
+            zone_b=zone_b,
+            max_link_capacity=self._optional_int(
+                metadata, "max_link_capacity"
+            ),
+        )
