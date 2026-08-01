@@ -2,7 +2,15 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+
+# One run per branch/PR: a newer run cancels the older in-progress one, and
+# feature branches run only via pull_request (push is limited to main), so a
+# push with an open PR no longer starts two duplicate runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
