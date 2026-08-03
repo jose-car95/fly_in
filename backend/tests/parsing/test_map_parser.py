@@ -27,14 +27,18 @@ def test_parses_regular_hub_with_metadata() -> None:
 
     result = MapParser(text).parse()
 
-    # A regular `hub:` is a non-terminal zone; its max_drones tag is parsed
-    # (M1.4b) and it stays NORMAL since it carries no zone= tag.
+    # A regular `hub:` is a non-terminal zone; its max_drones and color tags
+    # are parsed and it stays NORMAL since it carries no zone= tag.
     assert result.zones["junction"] == Zone(
-        name="junction", x=1, y=0, max_drones=2
+        name="junction", x=1, y=0, max_drones=2, color="yellow"
     )
-    # start/end lines also carry metadata brackets that must not break parsing.
-    assert result.start == Zone(name="start", x=0, y=0, is_start=True)
-    assert result.end == Zone(name="goal", x=2, y=0, is_end=True)
+    # start/end carry color tags too, parsed like any other zone.
+    assert result.start == Zone(
+        name="start", x=0, y=0, color="green", is_start=True
+    )
+    assert result.end == Zone(
+        name="goal", x=2, y=0, color="green", is_end=True
+    )
 
 
 def test_error_reports_physical_line_number() -> None:
@@ -85,3 +89,15 @@ def test_parses_link_capacity_and_clean_endpoints() -> None:
     # No tag → None (the default-1 sentinel).
     assert mid_goal.zone_b == "goal"
     assert mid_goal.max_link_capacity is None
+
+
+def test_parses_zone_color_as_free_string() -> None:
+    text = (FIXTURES_DIR / "valid_zone_color.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    # Color is stored on any zone, terminals included, as a free string.
+    assert result.start.color == "green"
+    assert result.end.color == "red"
+    # No color= tag leaves color as None.
+    assert result.zones["mid"].color is None

@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: color= is stored on the zone as a free string, on any zone including
+# terminals; a zone with no color= tag keeps color=None. Color is visual only.
+nb_drones: 2
+start_hub: start 0 0 [color=green]
+hub: mid 1 0 [zone=priority]
+end_hub: goal 2 0 [color=red]
+connection: start-mid
+connection: mid-goal

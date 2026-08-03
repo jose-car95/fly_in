@@ -6,16 +6,18 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.4c — `max_link_capacity=` fija la capacidad de una
-  conexión (sin tag → `None`, default 1). Se arregla la deuda de M1.2: los extremos se
-  leen del texto ANTES del `[`, así el bloque `[...]` ya no se cuela en `zone_b`. Nuevo
-  helper `_optional_int(metadata, key)` reutilizado por `max_drones` y
-  `max_link_capacity`. Falta `color` (M1.4d) y claves desconocidas (M1.4e).
-- Verificado con comandos: `pytest` (6 passed), `flake8 .` (limpio, límite 79),
+- Último slice completado: M1.4d — `color=` se guarda en `Zone.color` (campo nuevo
+  `str | None`, default `None`), como string libre en cualquier zona (terminales
+  incluidas). Es visual (para la vista coloreada de M6), no afecta rutas ni salida. Se
+  DECIDIÓ guardarlo (vs ignorarlo) porque el parser es el único lector del mapa y M6 lo
+  exige. Se actualizó el test de metadatos con los colores reales. Falta M1.4e (rechazar
+  claves desconocidas), que cierra el issue #8.
+- Verificado con comandos: `pytest` (7 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
   y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.4d — `color=` (decidir si se guarda para la
-  visualización de M6 o se ignora; hoy no hay campo `color` en el dominio).
+- Siguiente paso propuesto: M1.4e — rechazar claves de metadatos desconocidas (ahora
+  que ya conocemos todas las válidas: `zone`, `max_drones`, `max_link_capacity`,
+  `color`), cerrando M1.4/#8.
 
 ## Decisiones tomadas
 
@@ -31,6 +33,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-07-26 | Full-OOP: el comportamiento va en clases, no en funciones sueltas. Parser → clase `MapParser` (hecho) | El subject exige OOP explícito; funciones de módulo con estado son un riesgo en el peer review. Regla fina en `CLAUDE.md` |
 | 2026-07-26 | `MapParser`: texto en el constructor, `parse()` sin args (una instancia = un parseo) | Prepara el estado de instancia para números de línea en errores (M1.3); reutilizar la instancia ensuciaría estado, así que es de un solo uso |
 | 2026-07-28 | M1.2: los metadatos `[...]` de las líneas de zona se IGNORAN, no se rechazan | Todos los mapas oficiales los llevan; rechazarlos bloquearía el parseo. Se interpretan en M1.4 con sus propios tests |
+| 2026-08-01 | M1.4d: `color=` se GUARDA en `Zone.color` (no se ignora) | El parser es el único lector del mapa y M6 exige la vista coloreada; capturarlo ahora (1 campo opcional) evita re-tocar el parser en M6. Coste: campo sin uso hasta M6 |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -92,3 +95,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-29 | Slice M1.4a (#8, parte 1/5): `zone=` → `ZoneType` con default `normal` y orden libre; helper `_parse_metadata` (bloque `[...]` → dict); `color`/`max_drones` aún ignorados; fixture `valid_zone_types.txt` | pytest 4 passed, lint/type en verde |
 | 2026-07-29 | Slice M1.4b (#8, parte 2/5): `max_drones=` → capacidad de zona, ignorado en terminales; test de M1.2 actualizado a `max_drones=2`; fixture `valid_zone_capacity.txt` | pytest 5 passed, lint/type en verde |
 | 2026-07-29 | Slice M1.4c (#8, parte 3/5): `max_link_capacity=` → capacidad de conexión; arreglada la deuda de M1.2 (extremos leídos antes del `[`); helper `_optional_int` reutilizado; fixture `valid_link_capacity.txt` | pytest 6 passed, lint/type en verde |
+| 2026-08-01 | Slice M1.4d (#8, parte 4/5): `color=` → nuevo campo `Zone.color` (string libre, visual para M6); DECISIÓN guardarlo vs ignorarlo; test de metadatos actualizado con colores; fixture `valid_zone_color.txt` | pytest 7 passed, lint/type en verde |
