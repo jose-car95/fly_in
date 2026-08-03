@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_link_capacity is a connection-only key; on a zone it is a
+# misplaced (context-wrong) key and must be rejected at its physical line (6).
+nb_drones: 1
+start_hub: start 0 0
+hub: mid 1 0 [max_link_capacity=3]
+end_hub: goal 2 0
+connection: start-mid
+connection: mid-goal
