@@ -151,10 +151,11 @@ class MapParser:
         """Parse a hub line (``<prefix> <name> <x> <y>``) into a :class:`Zone`.
 
         Reads the name, the two integer coordinates, the ``zone=`` tag (default
-        ``normal``) and the ``max_drones=`` tag. ``max_drones`` is ignored on
-        start/end hubs, which have unlimited capacity, and stays ``None`` when
-        absent (meaning the default of 1). The ``color`` tag is still ignored
-        in this slice.
+        ``normal``), the ``max_drones=`` tag and the ``color=`` tag.
+        ``max_drones`` is ignored on start/end hubs, which have unlimited
+        capacity, and stays ``None`` when absent (meaning the default of 1).
+        ``color`` is a free string kept for the M6 colored view, ``None`` when
+        absent.
 
         Args:
             line: The full hub line to parse.
@@ -180,6 +181,7 @@ class MapParser:
             y=int(y_str),
             zone_type=zone_type,
             max_drones=max_drones,
+            color=metadata.get("color"),
             is_start=is_start,
             is_end=is_end
         )

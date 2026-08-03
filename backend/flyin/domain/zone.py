@@ -28,6 +28,9 @@ class Zone:
         zone_type: Kind of the zone, which sets its movement cost.
         max_drones: Declared capacity, or ``None`` for the default (1). It is
             ignored for start/end hubs, which have unlimited capacity.
+        color: Display color declared in the map, or ``None`` when absent. It
+            is purely visual (used by the colored terminal view in M6) and
+            never affects routing or output.
         is_start: Whether this zone is the map's start hub.
         is_end: Whether this zone is the map's end hub.
     """
@@ -37,5 +40,6 @@ class Zone:
     y: int
     zone_type: ZoneType = ZoneType.NORMAL
     max_drones: int | None = None
+    color: str | None = None
     is_start: bool = False
     is_end: bool = False
