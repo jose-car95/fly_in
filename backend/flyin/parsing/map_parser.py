@@ -31,6 +31,20 @@ class LinePrefix(str, Enum):
     CONNECTION = "connection:"
 
 
+class MetadataKeys(Enum):
+    """Metadata tags accepted per line kind.
+
+    Each member's value is the set of keys valid on that kind of line, so a
+    tag placed in the wrong context (e.g. ``max_link_capacity`` on a zone) is
+    rejected just like an invented key. Grouping them under one typed Enum
+    keeps the whitelist in a single named place; the ``frozenset`` values are
+    immutable constants, not mutable module state.
+    """
+
+    ZONE = frozenset({"zone", "max_drones", "color"})
+    CONNECTION = frozenset({"max_link_capacity"})
+
+
 class MapParser:
     """Parses the text of a single map file into a :class:`FlyInMap`.
 
@@ -71,20 +85,22 @@ class MapParser:
         start: Zone | None = None
         end: Zone | None = None
 
-        for _, line in lines[1:]:
+        for lineno, line in lines[1:]:
             if line.startswith(LinePrefix.START_HUB):
                 start = self._parse_zone(
-                    line, LinePrefix.START_HUB, is_start=True
+                    line, LinePrefix.START_HUB, lineno, is_start=True
                 )
                 zones[start.name] = start
             elif line.startswith(LinePrefix.END_HUB):
-                end = self._parse_zone(line, LinePrefix.END_HUB, is_end=True)
+                end = self._parse_zone(
+                    line, LinePrefix.END_HUB, lineno, is_end=True
+                )
                 zones[end.name] = end
             elif line.startswith(LinePrefix.HUB):
-                hub = self._parse_zone(line, LinePrefix.HUB)
+                hub = self._parse_zone(line, LinePrefix.HUB, lineno)
                 zones[hub.name] = hub
             elif line.startswith(LinePrefix.CONNECTION):
-                connections.append(self._parse_connection(line))
+                connections.append(self._parse_connection(line, lineno))
 
         if start is None or end is None:
             raise ValueError(
@@ -144,6 +160,7 @@ class MapParser:
         self,
         line: str,
         prefix: LinePrefix,
+        lineno: int,
         *,
         is_start: bool = False,
         is_end: bool = False
@@ -160,14 +177,19 @@ class MapParser:
         Args:
             line: The full hub line to parse.
             prefix: The prefix tag to strip before reading the fields.
+            lineno: Physical 1-based line number, used for error messages.
             is_start: Whether the zone is the map's start hub.
             is_end: Whether the zone is the map's end hub.
 
         Returns:
             The zone described by the line.
+
+        Raises:
+            ValueError: If the line carries a metadata tag that is not valid
+                on a zone.
         """
         name, x_str, y_str, *_ = line.removeprefix(prefix).split()
-        metadata = self._parse_metadata(line)
+        metadata = self._parse_metadata(line, lineno, MetadataKeys.ZONE)
         zone_type = ZoneType(metadata.get("zone", "normal"))
         is_terminal = is_start or is_end
         max_drones = (
@@ -186,20 +208,29 @@ class MapParser:
             is_end=is_end
         )
 
-    def _parse_metadata(self, line: str) -> dict[str, str]:
+    def _parse_metadata(
+        self, line: str, lineno: int, allowed: MetadataKeys
+    ) -> dict[str, str]:
         """Parse the ``[key=value ...]`` block of a line into a mapping.
 
         Tags may appear in any order, so they are keyed by name rather than by
         position; a line with no bracket block yields an empty mapping. Only
         the raw string values are returned — turning them into zone types,
-        capacities, etc. is each caller's job.
+        capacities, etc. is each caller's job. A key outside ``allowed`` is
+        rejected so a typo or a tag in the wrong context cannot be silently
+        ignored.
 
         Args:
             line: The full map line, brackets included.
+            lineno: Physical 1-based line number, used for error messages.
+            allowed: The whitelist of metadata keys valid for this line's kind.
 
         Returns:
             A ``{key: value}`` mapping for the tags inside the brackets, empty
             when the line carries no ``[...]`` block.
+
+        Raises:
+            ValueError: If a tag key is not in ``allowed``.
         """
         open_bracket = line.find("[")
         if open_bracket == -1:
@@ -209,6 +240,10 @@ class MapParser:
         metadata: dict[str, str] = {}
         for token in body.split():
             key, value = token.split("=", maxsplit=1)
+            if key not in allowed.value:
+                raise ValueError(
+                    f"line {lineno}: unknown metadata key {key!r}"
+                )
             metadata[key] = value
         return metadata
 
@@ -226,7 +261,7 @@ class MapParser:
         value = metadata.get(key)
         return int(value) if value is not None else None
 
-    def _parse_connection(self, line: str) -> Connection:
+    def _parse_connection(self, line: str, lineno: int) -> Connection:
         """Parse a ``connection:`` line into a link.
 
         The line is ``<zone_a>-<zone_b>`` optionally followed by a
@@ -236,11 +271,18 @@ class MapParser:
 
         Args:
             line: The full connection line to parse.
+            lineno: Physical 1-based line number, used for error messages.
 
         Returns:
             The connection between the two named zones.
+
+        Raises:
+            ValueError: If the line carries a metadata tag that is not valid
+                on a connection.
         """
-        metadata = self._parse_metadata(line)
+        metadata = self._parse_metadata(
+            line, lineno, MetadataKeys.CONNECTION
+        )
         endpoints = line.removeprefix(LinePrefix.CONNECTION)
         endpoints = endpoints.split("[", maxsplit=1)[0].strip()
         zone_a, zone_b = endpoints.split("-", maxsplit=1)

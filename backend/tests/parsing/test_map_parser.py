@@ -101,3 +101,21 @@ def test_parses_zone_color_as_free_string() -> None:
     assert result.end.color == "red"
     # No color= tag leaves color as None.
     assert result.zones["mid"].color is None
+
+
+def test_rejects_unknown_metadata_key() -> None:
+    text = (FIXTURES_DIR / "invalid_unknown_zone_key.txt").read_text()
+
+    # 'speed' is not a valid tag anywhere; the error names the offending key
+    # and its physical line so a typo cannot slip through silently.
+    with pytest.raises(ValueError, match=r"line 6.*speed"):
+        MapParser(text).parse()
+
+
+def test_rejects_metadata_key_in_wrong_context() -> None:
+    text = (FIXTURES_DIR / "invalid_misplaced_metadata_key.txt").read_text()
+
+    # max_link_capacity is valid on a connection but not on a zone; the
+    # context-aware whitelist rejects it here.
+    with pytest.raises(ValueError, match=r"line 6.*max_link_capacity"):
+        MapParser(text).parse()

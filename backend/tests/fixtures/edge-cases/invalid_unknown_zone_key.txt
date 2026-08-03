@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: an unknown metadata key ([speed=5]) must be rejected, not
+# silently ignored; the error points at its physical line (6) and names it.
+nb_drones: 1
+start_hub: start 0 0
+hub: mid 1 0 [speed=5]
+end_hub: goal 2 0
+connection: start-mid
+connection: mid-goal
