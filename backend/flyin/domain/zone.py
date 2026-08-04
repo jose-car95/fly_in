@@ -16,6 +16,27 @@ class ZoneType(Enum):
     RESTRICTED = "restricted"
     PRIORITY = "priority"
 
+    @property
+    def move_cost(self) -> int | None:
+        """Turns needed to enter a zone of this type.
+
+        The cost is fixed by the subject and depends only on the destination
+        type, so it belongs to the type itself. ``BLOCKED`` returns ``None``
+        to mean impassable: a blocked zone is never entered and so never joins
+        the traversable graph built in M2.
+
+        Returns:
+            1 for ``NORMAL`` and ``PRIORITY``, 2 for ``RESTRICTED``, or
+            ``None`` for ``BLOCKED`` (impassable).
+        """
+        match self:
+            case ZoneType.NORMAL | ZoneType.PRIORITY:
+                return 1
+            case ZoneType.RESTRICTED:
+                return 2
+            case ZoneType.BLOCKED:
+                return None
+
 
 @dataclass
 class Zone:
