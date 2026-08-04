@@ -119,3 +119,48 @@ def test_rejects_metadata_key_in_wrong_context() -> None:
     # context-aware whitelist rejects it here.
     with pytest.raises(ValueError, match=r"line 6.*max_link_capacity"):
         MapParser(text).parse()
+
+
+def test_rejects_duplicate_zone_name() -> None:
+    text = (FIXTURES_DIR / "invalid_duplicate_zone_name.txt").read_text()
+
+    # A repeated name would silently overwrite the first zone; the name is
+    # the zone's identifier, so the duplicate is an error at its line.
+    with pytest.raises(ValueError, match=r"line 7.*duplicate zone name"):
+        MapParser(text).parse()
+
+
+def test_rejects_multiple_start_hub() -> None:
+    text = (FIXTURES_DIR / "invalid_multiple_start_hub.txt").read_text()
+
+    # A map must declare exactly one start hub; the second one is rejected.
+    with pytest.raises(ValueError, match=r"line 6.*start_hub"):
+        MapParser(text).parse()
+
+
+def test_rejects_multiple_end_hub() -> None:
+    text = (FIXTURES_DIR / "invalid_multiple_end_hub.txt").read_text()
+
+    # Symmetric to the start hub: exactly one end hub is allowed.
+    with pytest.raises(ValueError, match=r"line 7.*end_hub"):
+        MapParser(text).parse()
+
+
+def test_rejects_connection_to_undefined_zone() -> None:
+    text = (FIXTURES_DIR / "invalid_undefined_connection_zone.txt").read_text()
+
+    # 'ghost' is never defined as a zone; the dangling reference is rejected
+    # at the connection's physical line.
+    with pytest.raises(ValueError, match=r"line 9.*ghost"):
+        MapParser(text).parse()
+
+
+def test_parses_connection_before_zone_definition() -> None:
+    text = (FIXTURES_DIR / "valid_forward_connection.txt").read_text()
+
+    result = MapParser(text).parse()
+
+    # Zones and connections may interleave in any order: the link to 'mid' is
+    # declared before 'mid' exists, yet resolves once the whole map is read.
+    assert set(result.zones) == {"start", "mid", "goal"}
+    assert len(result.connections) == 2

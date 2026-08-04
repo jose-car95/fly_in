@@ -1,0 +1,8 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: the map declares two start_hub lines; the second is rejected at
+# its physical line (6), since a map must have exactly one start hub.
+nb_drones: 1
+start_hub: s1 0 0
+start_hub: s2 1 0
+end_hub: goal 2 0
+connection: s1-goal
