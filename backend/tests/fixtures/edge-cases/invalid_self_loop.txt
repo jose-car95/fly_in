@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: C-C is a self-loop (a zone linked to itself), which the subject
+# does not define; it is rejected at its physical line (9).
+nb_drones: 1
+start_hub: A 0 0
+hub: C 1 0
+end_hub: B 2 0
+connection: A-C
+connection: C-C

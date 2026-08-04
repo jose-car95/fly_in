@@ -164,3 +164,21 @@ def test_parses_connection_before_zone_definition() -> None:
     # declared before 'mid' exists, yet resolves once the whole map is read.
     assert set(result.zones) == {"start", "mid", "goal"}
     assert len(result.connections) == 2
+
+
+def test_rejects_duplicate_undirected_connection() -> None:
+    text = (FIXTURES_DIR / "invalid_duplicate_connection.txt").read_text()
+
+    # A-B and B-A denote the same undirected link; the second declaration is
+    # a duplicate, rejected at its physical line.
+    with pytest.raises(ValueError, match=r"line 8.*duplicate connection"):
+        MapParser(text).parse()
+
+
+def test_rejects_self_loop_connection() -> None:
+    text = (FIXTURES_DIR / "invalid_self_loop.txt").read_text()
+
+    # A connection from a zone to itself is meaningless for routing and is
+    # not defined by the subject, so it is rejected.
+    with pytest.raises(ValueError, match=r"line 9.*self-loop"):
+        MapParser(text).parse()
