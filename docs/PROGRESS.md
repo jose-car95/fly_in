@@ -6,15 +6,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.6 — bien-formación de conexiones, con línea física.
-  En `_resolve_connections`: (1) self-loop (`a-a`) → error (decisión de SPEC_NOTES, ya
-  implementada); (2) duplicado NO DIRIGIDO: la clave canónica `frozenset({a,b})` iguala
-  `a-b` y `b-a`, y un `set` de vistos detecta la repetición. Cierra el issue #10.
-- Verificado con comandos: `pytest` (16 passed), `flake8 .` (limpio, límite 79),
-  `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
-  y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.7 — tipos de zona + representación de `blocked`
-  (intransitable) (#11).
+- Último slice completado: M1.7 — representación del coste por tipo de zona en el
+  dominio. `ZoneType.move_cost` (propiedad, `match` de 4 casos): normal/priority=1,
+  restricted=2, blocked=`None` (intransitable → nunca entra en el grafo transitable de
+  M2). No hay `is_traversable` aparte (YAGNI: `None` ya lo expresa). Tests de dominio
+  nuevos en `tests/domain/test_zone.py`; fixture de tipos extendida para cubrir
+  `blocked` a través del parser. Cierra el issue #11.
+- Verificado con comandos: `pytest` (18 passed: 2 dominio + 16 parser), `flake8 .`
+  (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores, 9 ficheros).
+  `make lint` y `make test` también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: M1.8 — validación de capacidades (`max_drones`/
+  `max_link_capacity` ≥ 1; ignorar `max_drones` en terminales) (#12).
 
 ## Decisiones tomadas
 
@@ -34,6 +36,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-03 | M1.4e: claves de metadatos válidas POR CONTEXTO (zona vs conexión), no una lista global | Una clave válida en el sitio equivocado (p.ej. `max_link_capacity` en una zona) se ignoraría en silencio; el objetivo del slice es justo evitar ese error mudo. Coste: dos `frozenset` en vez de uno |
 | 2026-08-04 | M1.5: las conexiones se validan en dos pasadas (tras leer todo el mapa), no sobre la marcha | El subject no fija que las zonas se definan antes que las conexiones; validar al final acepta cualquier orden y solo rechaza referencias realmente rotas. Coste: guardar el nº de línea de cada conexión para el error |
 | 2026-08-04 | M1.6: self-loops (`a-a`) se rechazan aquí, cerrando la decisión de SPEC_NOTES que ningún slice implementaba | Misma zona de código que el duplicado (bien-formación de conexión); error propio más claro que dejarlo caer en el check de duplicado. Coste: un `if a == b` y un test/fixture |
+| 2026-08-04 | M1.7: el coste de movimiento vive en `ZoneType.move_cost` (dominio), no en el grafo | La tabla de coste es una FACT del subject que depende solo del tipo; ponerla en el enum la deja lista para que M2 solo la consuma. `blocked=None` codifica intransitable sin una segunda propiedad |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -99,3 +102,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-03 | Slice M1.4e (#8, parte 5/5): claves de metadatos desconocidas → error con línea física; whitelist por contexto en un Enum (`MetadataKeys.ZONE`/`.CONNECTION`, valores `frozenset`); `lineno` hilado hasta los parsers; fixtures `invalid_unknown_zone_key.txt` e `invalid_misplaced_metadata_key.txt`. Cierra M1.4/#8 | pytest 9 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.5 (#9): unicidad de nombres (`_add_zone`), exactamente un start/end, y conexiones solo entre zonas definidas (`_resolve_connections`, dos pasadas); 5 fixtures nuevas (4 inválidas + `valid_forward_connection.txt`). Cierra #9 | pytest 14 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.6 (#10): duplicados de conexión no dirigidos (`frozenset({a,b})` + `set` de vistos) y self-loops rechazados en `_resolve_connections`; fixtures `invalid_duplicate_connection.txt` e `invalid_self_loop.txt`. Cierra #10 | pytest 16 passed, lint/type en verde |
+| 2026-08-04 | Slice M1.7 (#11): `ZoneType.move_cost` (`match`: normal/priority=1, restricted=2, blocked=None); `tests/domain/test_zone.py` nuevo; fixture `valid_zone_types.txt` extendida con `blocked`. Cierra #11 | pytest 18 passed, lint/type en verde |

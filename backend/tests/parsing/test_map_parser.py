@@ -60,6 +60,9 @@ def test_parses_zone_type_metadata_in_any_order() -> None:
     assert result.zones["fast"].zone_type is ZoneType.PRIORITY
     # No zone= tag (only color/max_drones) falls back to the NORMAL default.
     assert result.zones["plain"].zone_type is ZoneType.NORMAL
+    # blocked is parsed like any other type (its impassability is domain
+    # behaviour, tested in tests/domain, not a parsing concern).
+    assert result.zones["wall"].zone_type is ZoneType.BLOCKED
     assert result.start.zone_type is ZoneType.NORMAL
 
 
