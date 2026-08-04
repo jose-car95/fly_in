@@ -1,0 +1,10 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: a connection (start-mid) appears before 'mid' is defined; the
+# two-pass validation accepts it, since the subject fixes no order between
+# zone and connection lines. All references resolve once the map is read.
+nb_drones: 1
+start_hub: start 0 0
+connection: start-mid
+hub: mid 1 0
+connection: mid-goal
+end_hub: goal 2 0

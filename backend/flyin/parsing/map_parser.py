@@ -73,39 +73,51 @@ class MapParser:
             hubs exposed directly.
 
         Raises:
-            ValueError: If the first significant line is not ``nb_drones:``,
-                or if the map does not declare exactly one start hub and one
-                end hub.
+            ValueError: If the map is malformed: the first significant line is
+                not ``nb_drones:``, a start or end hub is missing or declared
+                more than once, a zone name is duplicated, or a connection
+                names a zone that is not defined.
         """
         lines = self._significant_lines()
 
         nb_drones = self._parse_nb_drones(lines[0])
         zones: dict[str, Zone] = {}
-        connections: list[Connection] = []
+        pending: list[tuple[int, Connection]] = []
         start: Zone | None = None
         end: Zone | None = None
 
         for lineno, line in lines[1:]:
             if line.startswith(LinePrefix.START_HUB):
+                if start is not None:
+                    raise ValueError(
+                        f"line {lineno}: multiple start_hub declared"
+                    )
                 start = self._parse_zone(
                     line, LinePrefix.START_HUB, lineno, is_start=True
                 )
-                zones[start.name] = start
+                self._add_zone(zones, start, lineno)
             elif line.startswith(LinePrefix.END_HUB):
+                if end is not None:
+                    raise ValueError(
+                        f"line {lineno}: multiple end_hub declared"
+                    )
                 end = self._parse_zone(
                     line, LinePrefix.END_HUB, lineno, is_end=True
                 )
-                zones[end.name] = end
+                self._add_zone(zones, end, lineno)
             elif line.startswith(LinePrefix.HUB):
                 hub = self._parse_zone(line, LinePrefix.HUB, lineno)
-                zones[hub.name] = hub
+                self._add_zone(zones, hub, lineno)
             elif line.startswith(LinePrefix.CONNECTION):
-                connections.append(self._parse_connection(line, lineno))
+                connection = self._parse_connection(line, lineno)
+                pending.append((lineno, connection))
 
         if start is None or end is None:
             raise ValueError(
                 "map must declare exactly one start_hub and one end_hub"
             )
+
+        connections = self._resolve_connections(pending, zones)
 
         return FlyInMap(
             nb_drones=nb_drones,
@@ -114,6 +126,59 @@ class MapParser:
             start=start,
             end=end
         )
+
+    def _add_zone(
+        self, zones: dict[str, Zone], zone: Zone, lineno: int
+    ) -> None:
+        """Insert a zone, rejecting a name already used by another zone.
+
+        The name is the zone's unique identifier, so a repeat would silently
+        overwrite an earlier zone; instead it is a parse error.
+
+        Args:
+            zones: The name-to-zone map being built, mutated in place.
+            zone: The zone to insert.
+            lineno: Physical 1-based line number, used for error messages.
+
+        Raises:
+            ValueError: If ``zone.name`` is already present.
+        """
+        if zone.name in zones:
+            raise ValueError(
+                f"line {lineno}: duplicate zone name {zone.name!r}"
+            )
+        zones[zone.name] = zone
+
+    def _resolve_connections(
+        self,
+        pending: list[tuple[int, Connection]],
+        zones: dict[str, Zone]
+    ) -> list[Connection]:
+        """Validate that every connection links two defined zones.
+
+        Connections are checked after the whole map is read, so a link may
+        name a zone defined later in the file; the subject fixes no order
+        between zone and connection lines.
+
+        Args:
+            pending: ``(physical_line_number, connection)`` pairs collected
+                while scanning the map.
+            zones: All zones of the map, indexed by name.
+
+        Returns:
+            The connections, in their original order.
+
+        Raises:
+            ValueError: If a connection names a zone that is not defined.
+        """
+        for lineno, connection in pending:
+            for endpoint in (connection.zone_a, connection.zone_b):
+                if endpoint not in zones:
+                    raise ValueError(
+                        f"line {lineno}: connection references undefined "
+                        f"zone {endpoint!r}"
+                    )
+        return [connection for _, connection in pending]
 
     def _significant_lines(self) -> list[tuple[int, str]]:
         """Return the meaningful lines paired with their physical line number.

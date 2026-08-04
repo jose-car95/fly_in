@@ -6,17 +6,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.4e — claves de metadatos desconocidas → error con línea
-  física. Whitelist POR CONTEXTO (constantes `frozenset`): una zona admite `zone`,
-  `max_drones`, `color`; una conexión solo `max_link_capacity`. Una clave inventada
-  (`speed=`) o una válida en el sitio equivocado (`max_link_capacity` en zona) se
-  rechaza en vez de ignorarse en silencio. El número de línea físico se hila hasta
-  `_parse_zone`/`_parse_connection`/`_parse_metadata`. Cierra M1.4 y el issue #8.
-- Verificado con comandos: `pytest` (9 passed), `flake8 .` (limpio, límite 79),
+- Último slice completado: M1.5 — coherencia interna de referencias. Tres checks con
+  línea física: (1) nombres de zona únicos (helper `_add_zone` centraliza el rechazo de
+  duplicados); (2) exactamente un start y un end (segundo `start_hub`/`end_hub` → error);
+  (3) integridad referencial: una conexión solo enlaza zonas definidas. Validación de
+  conexiones en DOS PASADAS (`_resolve_connections`) para no imponer un orden
+  zona-antes-que-conexión que el subject no fija. Cierra el issue #9.
+- Verificado con comandos: `pytest` (14 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 8 ficheros fuente). `make lint`
   y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.5 — unicidad de start/end y de nombres de zona, y
-  conexiones solo entre zonas definidas (#9).
+- Siguiente paso propuesto: M1.6 — conexiones bidireccionales; `a-b` y `b-a` tratadas
+  como duplicado (#10).
 
 ## Decisiones tomadas
 
@@ -34,6 +34,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-07-28 | M1.2: los metadatos `[...]` de las líneas de zona se IGNORAN, no se rechazan | Todos los mapas oficiales los llevan; rechazarlos bloquearía el parseo. Se interpretan en M1.4 con sus propios tests |
 | 2026-08-01 | M1.4d: `color=` se GUARDA en `Zone.color` (no se ignora) | El parser es el único lector del mapa y M6 exige la vista coloreada; capturarlo ahora (1 campo opcional) evita re-tocar el parser en M6. Coste: campo sin uso hasta M6 |
 | 2026-08-03 | M1.4e: claves de metadatos válidas POR CONTEXTO (zona vs conexión), no una lista global | Una clave válida en el sitio equivocado (p.ej. `max_link_capacity` en una zona) se ignoraría en silencio; el objetivo del slice es justo evitar ese error mudo. Coste: dos `frozenset` en vez de uno |
+| 2026-08-04 | M1.5: las conexiones se validan en dos pasadas (tras leer todo el mapa), no sobre la marcha | El subject no fija que las zonas se definan antes que las conexiones; validar al final acepta cualquier orden y solo rechaza referencias realmente rotas. Coste: guardar el nº de línea de cada conexión para el error |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -97,3 +98,4 @@ actual de `gh` sí lo tiene):
 | 2026-07-29 | Slice M1.4c (#8, parte 3/5): `max_link_capacity=` → capacidad de conexión; arreglada la deuda de M1.2 (extremos leídos antes del `[`); helper `_optional_int` reutilizado; fixture `valid_link_capacity.txt` | pytest 6 passed, lint/type en verde |
 | 2026-08-01 | Slice M1.4d (#8, parte 4/5): `color=` → nuevo campo `Zone.color` (string libre, visual para M6); DECISIÓN guardarlo vs ignorarlo; test de metadatos actualizado con colores; fixture `valid_zone_color.txt` | pytest 7 passed, lint/type en verde |
 | 2026-08-03 | Slice M1.4e (#8, parte 5/5): claves de metadatos desconocidas → error con línea física; whitelist por contexto en un Enum (`MetadataKeys.ZONE`/`.CONNECTION`, valores `frozenset`); `lineno` hilado hasta los parsers; fixtures `invalid_unknown_zone_key.txt` e `invalid_misplaced_metadata_key.txt`. Cierra M1.4/#8 | pytest 9 passed, lint/type en verde |
+| 2026-08-04 | Slice M1.5 (#9): unicidad de nombres (`_add_zone`), exactamente un start/end, y conexiones solo entre zonas definidas (`_resolve_connections`, dos pasadas); 5 fixtures nuevas (4 inválidas + `valid_forward_connection.txt`). Cierra #9 | pytest 14 passed, lint/type en verde |

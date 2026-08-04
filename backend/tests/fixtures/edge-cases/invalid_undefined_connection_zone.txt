@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: a connection names 'ghost', which is never defined as a zone; the
+# reference is rejected at the connection's physical line (9).
+nb_drones: 1
+start_hub: start 0 0
+hub: mid 1 0
+end_hub: goal 2 0
+connection: start-mid
+connection: mid-ghost
