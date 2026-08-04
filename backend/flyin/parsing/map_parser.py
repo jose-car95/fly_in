@@ -75,8 +75,9 @@ class MapParser:
         Raises:
             ValueError: If the map is malformed: the first significant line is
                 not ``nb_drones:``, a start or end hub is missing or declared
-                more than once, a zone name is duplicated, or a connection
-                names a zone that is not defined.
+                more than once, a zone name is duplicated, or a connection is
+                a self-loop, names an undefined zone, or repeats an undirected
+                pair.
         """
         lines = self._significant_lines()
 
@@ -154,11 +155,14 @@ class MapParser:
         pending: list[tuple[int, Connection]],
         zones: dict[str, Zone]
     ) -> list[Connection]:
-        """Validate that every connection links two defined zones.
+        """Validate every connection and return them in order.
 
         Connections are checked after the whole map is read, so a link may
         name a zone defined later in the file; the subject fixes no order
-        between zone and connection lines.
+        between zone and connection lines. Each link must not be a self-loop,
+        must name two defined zones, and must be unique as an *undirected*
+        pair (``a-b`` and ``b-a`` are the same link, so declaring both is a
+        duplicate).
 
         Args:
             pending: ``(physical_line_number, connection)`` pairs collected
@@ -169,15 +173,29 @@ class MapParser:
             The connections, in their original order.
 
         Raises:
-            ValueError: If a connection names a zone that is not defined.
+            ValueError: If a connection is a self-loop, names an undefined
+                zone, or repeats an undirected pair already seen.
         """
+        seen: set[frozenset[str]] = set()
         for lineno, connection in pending:
+            if connection.zone_a == connection.zone_b:
+                raise ValueError(
+                    f"line {lineno}: self-loop on zone {connection.zone_a!r}"
+                )
             for endpoint in (connection.zone_a, connection.zone_b):
                 if endpoint not in zones:
                     raise ValueError(
                         f"line {lineno}: connection references undefined "
                         f"zone {endpoint!r}"
                     )
+            # An undirected pair keyed as a set ignores endpoint order.
+            link = frozenset((connection.zone_a, connection.zone_b))
+            if link in seen:
+                raise ValueError(
+                    f"line {lineno}: duplicate connection between "
+                    f"{connection.zone_a!r} and {connection.zone_b!r}"
+                )
+            seen.add(link)
         return [connection for _, connection in pending]
 
     def _significant_lines(self) -> list[tuple[int, str]]:

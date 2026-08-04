@@ -1,0 +1,8 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: A-B and B-A are the same undirected link; declaring both is a
+# duplicate, rejected at the second occurrence's physical line (8).
+nb_drones: 1
+start_hub: A 0 0
+end_hub: B 1 0
+connection: A-B
+connection: B-A
