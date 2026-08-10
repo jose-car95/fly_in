@@ -5,22 +5,26 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M1 COMPLETO** (M0 cerrado). El parser está terminado; siguiente es M2
-  (grafo propio + pathfinding), que empieza a consumir `ZoneType.move_cost`.
-- Último slice completado: M1.9 — modelo de error único. Nace `shared/exceptions.py`
+- Milestone: **M2 en progreso** (M0 y M1 cerrados). Nace el grafo propio; luego Dijkstra.
+- Último slice completado: M2.1 — nace `flyin/graph/` con la clase `Graph`. Construye
+  desde un `FlyInMap` la adyacencia transitable NO DIRIGIDA como lista de adyacencia
+  (`dict[str, set[str]]`, idiomática para grafos dispersos, sin librerías). Las zonas
+  `blocked` quedan FUERA: no son nodos y ninguna arista las toca (una conexión con
+  extremo blocked no aporta arista). `neighbors(nombre)` devuelve un `frozenset` nuevo.
+  Aún sin pesos ni caminos (eso es M2.2/M2.3). Tests de grafo nuevos en `tests/graph/`.
+- Anterior: M1.9 — modelo de error único. Nace `shared/exceptions.py`
   con `MapParseError(Exception)`; los 11 raises del parser migran a ese tipo. Un solo
   `try/except` por línea envuelve cualquier excepción cruda (`int()`, unpack) en
   `MapParseError` con línea física; guardianes explícitos para mapa vacío, `nb_drones`
   no numérico y corchete sin cerrar. `MapParseError` NO hereda de `ValueError` para que
   el envolvente no capture sus propios errores. Tests migrados a `MapParseError` + test
   parametrizado de input malformado. Cierra el issue #13 y **todo M1**.
-- Verificado con comandos: `pytest` (28 passed: 2 dominio + 26 parser), `flake8 .`
-  (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores, 11 ficheros).
-  `make lint` y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: **M2** — grafo propio (adyacencia transitable, `blocked`
-  fuera) + pathfinding (BFS/Dijkstra), primer consumidor de `ZoneType.move_cost`.
-- Limpieza hecha: borrados los 3 fixtures huérfanos del commit del split que ningún
-  test usaba (duplicaban conceptos ya cubiertos con otros nombres).
+- Verificado con comandos: `pytest` (30 passed: 2 dominio + 2 grafo + 26 parser),
+  `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores,
+  14 ficheros). `make lint` y `make test` también en verde tal cual los corre la CI.
+- Siguiente paso propuesto: **M2.2** — Dijkstra sobre el grafo: camino de menor coste
+  (con `ZoneType.move_cost`) y detección de mapa no resoluble (end inalcanzable). Nace
+  `flyin/pathfinding/`.
 
 ## Decisiones tomadas
 
@@ -45,6 +49,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-04 | M1.9: `MapParseError` hereda de `Exception`, no de `ValueError` | Así el `try/except ValueError` envolvente no captura los errores propios del parser (sin doble-envoltura); a cambio se migran los tests a `pytest.raises(MapParseError)`, que además quedan más precisos |
 | 2026-08-04 | M1.9: un único `try/except` por línea en vez de blindar cada `int()`/unpack | Convierte cualquier excepción cruda de línea malformada en `MapParseError` con línea en un solo sitio; guardianes explícitos solo donde hay bug silencioso o cabe un mensaje más claro |
 | 2026-08-04 | Un solo tipo `MapParseError` ahora; código (enum) + atributos estructurados solo cuando llegue la API | El único caller (CLI) maneja todos los errores igual (imprime y para); el detalle vive en el mensaje. Subclases o códigos legibles por máquina solo se justifican si un caller reacciona distinto o la API los serializa como datos — YAGNI hasta entonces. `MapParseError` como base deja esa evolución abierta y aditiva |
+| 2026-08-04 | M2: un único Dijkstra, sin BFS suelto | El grafo es ponderado (restricted=2), así que el camino mínimo es por coste → Dijkstra, no BFS. Dijkstra además da la alcanzabilidad gratis (end en coste infinito → mapa no resoluble), así que un BFS aparte para eso sería código redundante. BFS se usa como modelo mental para explicar Dijkstra, no se implementa |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -55,7 +60,8 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 | --- | --- | --- |
 | M1 (hecho) | `backend/flyin/domain`, `.../parsing` | Entidades puras; entrada texto→dominio |
 | M1.9 (hecho) | `shared/exceptions.py` | Nació con `MapParseError`: los errores de parseo se repetían y pedían un tipo común |
-| M2 | `pathfinding` | Grafo propio + algoritmos de rutas |
+| M2.1 (hecho) | `graph` | La adyacencia transitable propia, sin librerías |
+| M2.2 | `pathfinding` | Dijkstra sobre el grafo (camino de menor coste + resoluble) |
 | M3 | `simulation` (motor `simulate()`) + `cli` | La costura reusable + su primer cliente |
 | M4 | `scheduling` | Reservas de capacidad/tiempo |
 | M5 | `benchmark` | Comparar algoritmos / métricas |
@@ -113,3 +119,5 @@ actual de `gh` sí lo tiene):
 | 2026-08-04 | Slice M1.7 (#11): `ZoneType.move_cost` (`match`: normal/priority=1, restricted=2, blocked=None); `tests/domain/test_zone.py` nuevo; fixture `valid_zone_types.txt` extendida con `blocked`. Cierra #11 | pytest 18 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.8 (#12): validación de capacidad ≥1 en `_optional_capacity` (antes `_optional_int`) con línea física; 0 terminal ignorado (no error); adoptado `invalid_zero_capacity.txt`, nuevos `invalid_zero_link_capacity.txt` y `valid_terminal_zero_capacity_ignored.txt`. Cierra #12 | pytest 21 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.9 (#13): nace `flyin/shared/` con `MapParseError`; 11 raises migrados; `try/except` envolvente por línea + guardianes (mapa vacío, nb_drones no numérico, corchete sin cerrar); tests migrados a `MapParseError` + parametrizado de input malformado. Cierra #13 y M1 | pytest 28 passed, lint/type en verde |
+| 2026-08-04 | Housekeeping: borradas 3 fixtures huérfanas; borradas 8 ramas remotas mergeadas; activado `deleteBranchOnMerge`; registrada decisión de Dijkstra único (épica #16 y PROGRESS) | 28 passed, sin cambios de código |
+| 2026-08-04 | Slice M2.1 (épica #16): nace `flyin/graph/` con `Graph`; adyacencia transitable no dirigida (`dict[str, set]`), `blocked` fuera; `neighbors()` → `frozenset`; `tests/graph/` nuevo | pytest 30 passed, lint/type en verde |
