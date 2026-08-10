@@ -1,0 +1,8 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_drones on a terminal is ignored (terminals are unlimited), so
+# even an otherwise-invalid 0 there is not rejected: the ignore happens before
+# the >= 1 validation. The terminal keeps max_drones=None.
+nb_drones: 1
+start_hub: start 0 0 [max_drones=0]
+end_hub: goal 1 0
+connection: start-goal
