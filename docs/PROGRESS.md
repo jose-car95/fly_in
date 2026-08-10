@@ -19,9 +19,8 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `make lint` y `make test` también en verde tal cual los corre la CI.
 - Siguiente paso propuesto: **M2** — grafo propio (adyacencia transitable, `blocked`
   fuera) + pathfinding (BFS/Dijkstra), primer consumidor de `ZoneType.move_cost`.
-- Pendiente aparte (con OK de Jose): borrar 3 fixtures huérfanos del commit del split
-  sin usar por ningún test (`valid_terminal_capacity_ignored.txt`,
-  `invalid_unknown_connection_zone.txt`, `invalid_duplicate_reversed_connection.txt`).
+- Limpieza hecha: borrados los 3 fixtures huérfanos del commit del split que ningún
+  test usaba (duplicaban conceptos ya cubiertos con otros nombres).
 
 ## Decisiones tomadas
 
@@ -45,6 +44,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-04 | M1.8: la validación de capacidad ≥1 vive en `_optional_capacity`, no en cada llamador | Único punto por donde pasan `max_drones` y `max_link_capacity`; validar ahí lo cubre para ambos. El orden ignorar-antes-de-validar deja el 0 terminal como no-error sin código extra |
 | 2026-08-04 | M1.9: `MapParseError` hereda de `Exception`, no de `ValueError` | Así el `try/except ValueError` envolvente no captura los errores propios del parser (sin doble-envoltura); a cambio se migran los tests a `pytest.raises(MapParseError)`, que además quedan más precisos |
 | 2026-08-04 | M1.9: un único `try/except` por línea en vez de blindar cada `int()`/unpack | Convierte cualquier excepción cruda de línea malformada en `MapParseError` con línea en un solo sitio; guardianes explícitos solo donde hay bug silencioso o cabe un mensaje más claro |
+| 2026-08-04 | Un solo tipo `MapParseError` ahora; código (enum) + atributos estructurados solo cuando llegue la API | El único caller (CLI) maneja todos los errores igual (imprime y para); el detalle vive en el mensaje. Subclases o códigos legibles por máquina solo se justifican si un caller reacciona distinto o la API los serializa como datos — YAGNI hasta entonces. `MapParseError` como base deja esa evolución abierta y aditiva |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
