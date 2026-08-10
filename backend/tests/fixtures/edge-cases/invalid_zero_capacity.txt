@@ -1,5 +1,6 @@
-# DERIVED INVALID FIXTURE.
-# Expected: max_drones on a regular zone must be positive.
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_drones on a regular zone must be at least 1; a declared 0 (a
+# zone no drone fits through) is rejected at its physical line (6).
 nb_drones: 1
 start_hub: start 0 0
 hub: broken 1 0 [max_drones=0]

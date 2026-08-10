@@ -1,0 +1,9 @@
+# DERIVED EDGE-CASE FIXTURE.
+# Purpose: max_link_capacity must be at least 1; a declared 0 (a link no
+# drone can cross) is rejected at the connection's physical line (8).
+nb_drones: 1
+start_hub: start 0 0
+hub: mid 1 0
+end_hub: goal 2 0
+connection: start-mid [max_link_capacity=0]
+connection: mid-goal

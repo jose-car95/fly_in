@@ -269,7 +269,7 @@ class MapParser:
 
         Raises:
             ValueError: If the line carries a metadata tag that is not valid
-                on a zone.
+                on a zone, or a ``max_drones`` capacity below 1.
         """
         name, x_str, y_str, *_ = line.removeprefix(prefix).split()
         metadata = self._parse_metadata(line, lineno, MetadataKeys.ZONE)
@@ -278,7 +278,7 @@ class MapParser:
         max_drones = (
             None
             if is_terminal
-            else self._optional_int(metadata, "max_drones")
+            else self._optional_capacity(metadata, "max_drones", lineno)
         )
         return Zone(
             name=name,
@@ -330,19 +330,35 @@ class MapParser:
             metadata[key] = value
         return metadata
 
-    def _optional_int(self, metadata: dict[str, str], key: str) -> int | None:
-        """Read an optional integer tag from parsed metadata.
+    def _optional_capacity(
+        self, metadata: dict[str, str], key: str, lineno: int
+    ) -> int | None:
+        """Read an optional capacity tag, requiring it to be positive.
+
+        A capacity of 0 or less means nothing fits through the zone or link,
+        which is meaningless, so it is rejected. An absent tag yields ``None``,
+        which downstream code treats as the default of 1.
 
         Args:
             metadata: The parsed ``{key: value}`` tag mapping.
-            key: The tag name to read.
+            key: The capacity tag name to read.
+            lineno: Physical 1-based line number, used for error messages.
 
         Returns:
-            The tag's integer value, or ``None`` when the tag is absent (which
-            downstream code treats as the default of 1).
+            The tag's integer value, or ``None`` when the tag is absent.
+
+        Raises:
+            ValueError: If the tag is present but not at least 1.
         """
         value = metadata.get(key)
-        return int(value) if value is not None else None
+        if value is None:
+            return None
+        capacity = int(value)
+        if capacity < 1:
+            raise ValueError(
+                f"line {lineno}: {key} must be at least 1, got {capacity}"
+            )
+        return capacity
 
     def _parse_connection(self, line: str, lineno: int) -> Connection:
         """Parse a ``connection:`` line into a link.
@@ -361,7 +377,7 @@ class MapParser:
 
         Raises:
             ValueError: If the line carries a metadata tag that is not valid
-                on a connection.
+                on a connection, or a ``max_link_capacity`` below 1.
         """
         metadata = self._parse_metadata(
             line, lineno, MetadataKeys.CONNECTION
@@ -372,7 +388,7 @@ class MapParser:
         return Connection(
             zone_a=zone_a,
             zone_b=zone_b,
-            max_link_capacity=self._optional_int(
-                metadata, "max_link_capacity"
+            max_link_capacity=self._optional_capacity(
+                metadata, "max_link_capacity", lineno
             )
         )

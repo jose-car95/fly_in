@@ -185,3 +185,33 @@ def test_rejects_self_loop_connection() -> None:
     # not defined by the subject, so it is rejected.
     with pytest.raises(ValueError, match=r"line 9.*self-loop"):
         MapParser(text).parse()
+
+
+def test_rejects_zero_max_drones() -> None:
+    text = (FIXTURES_DIR / "invalid_zero_capacity.txt").read_text()
+
+    # A capacity of 0 means no drone fits; it must be at least 1.
+    with pytest.raises(ValueError, match=r"line 6.*max_drones.*at least 1"):
+        MapParser(text).parse()
+
+
+def test_rejects_zero_link_capacity() -> None:
+    text = (FIXTURES_DIR / "invalid_zero_link_capacity.txt").read_text()
+
+    # Link capacity is validated just like zone capacity.
+    with pytest.raises(
+        ValueError, match=r"line 8.*max_link_capacity.*at least 1"
+    ):
+        MapParser(text).parse()
+
+
+def test_ignores_invalid_max_drones_on_terminal() -> None:
+    text = (
+        FIXTURES_DIR / "valid_terminal_zero_capacity_ignored.txt"
+    ).read_text()
+
+    result = MapParser(text).parse()
+
+    # max_drones is ignored on terminals before the >= 1 check runs, so an
+    # invalid 0 there is not an error: the terminal stays unlimited (None).
+    assert result.start.max_drones is None
