@@ -5,18 +5,20 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: M1 en progreso (M0 cerrado).
-- Último slice completado: M1.8 — validación de capacidades ≥ 1. El helper
-  `_optional_int` pasa a `_optional_capacity` (único punto de ambas capacidades) y
-  rechaza `< 1` con línea física. `max_drones` en terminales se sigue ignorando ANTES
-  de validar (el `None if is_terminal` corta antes del helper), así que un 0 terminal no
-  es error. Capacidad no numérica (`=abc`) queda para M1.9. Adoptado el fixture huérfano
-  `invalid_zero_capacity.txt`. Cierra el issue #12.
-- Verificado con comandos: `pytest` (21 passed: 2 dominio + 19 parser), `flake8 .`
-  (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores, 9 ficheros).
+- Milestone: **M1 COMPLETO** (M0 cerrado). El parser está terminado; siguiente es M2
+  (grafo propio + pathfinding), que empieza a consumir `ZoneType.move_cost`.
+- Último slice completado: M1.9 — modelo de error único. Nace `shared/exceptions.py`
+  con `MapParseError(Exception)`; los 11 raises del parser migran a ese tipo. Un solo
+  `try/except` por línea envuelve cualquier excepción cruda (`int()`, unpack) en
+  `MapParseError` con línea física; guardianes explícitos para mapa vacío, `nb_drones`
+  no numérico y corchete sin cerrar. `MapParseError` NO hereda de `ValueError` para que
+  el envolvente no capture sus propios errores. Tests migrados a `MapParseError` + test
+  parametrizado de input malformado. Cierra el issue #13 y **todo M1**.
+- Verificado con comandos: `pytest` (28 passed: 2 dominio + 26 parser), `flake8 .`
+  (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores, 11 ficheros).
   `make lint` y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: M1.9 — errores claros para input malformado (p. ej.
-  capacidad/coordenada no numérica) + nace `shared/exceptions.py` (#13). Cierra M1.
+- Siguiente paso propuesto: **M2** — grafo propio (adyacencia transitable, `blocked`
+  fuera) + pathfinding (BFS/Dijkstra), primer consumidor de `ZoneType.move_cost`.
 - Pendiente aparte (con OK de Jose): borrar 3 fixtures huérfanos del commit del split
   sin usar por ningún test (`valid_terminal_capacity_ignored.txt`,
   `invalid_unknown_connection_zone.txt`, `invalid_duplicate_reversed_connection.txt`).
@@ -41,6 +43,8 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-04 | M1.6: self-loops (`a-a`) se rechazan aquí, cerrando la decisión de SPEC_NOTES que ningún slice implementaba | Misma zona de código que el duplicado (bien-formación de conexión); error propio más claro que dejarlo caer en el check de duplicado. Coste: un `if a == b` y un test/fixture |
 | 2026-08-04 | M1.7: el coste de movimiento vive en `ZoneType.move_cost` (dominio), no en el grafo | La tabla de coste es una FACT del subject que depende solo del tipo; ponerla en el enum la deja lista para que M2 solo la consuma. `blocked=None` codifica intransitable sin una segunda propiedad |
 | 2026-08-04 | M1.8: la validación de capacidad ≥1 vive en `_optional_capacity`, no en cada llamador | Único punto por donde pasan `max_drones` y `max_link_capacity`; validar ahí lo cubre para ambos. El orden ignorar-antes-de-validar deja el 0 terminal como no-error sin código extra |
+| 2026-08-04 | M1.9: `MapParseError` hereda de `Exception`, no de `ValueError` | Así el `try/except ValueError` envolvente no captura los errores propios del parser (sin doble-envoltura); a cambio se migran los tests a `pytest.raises(MapParseError)`, que además quedan más precisos |
+| 2026-08-04 | M1.9: un único `try/except` por línea en vez de blindar cada `int()`/unpack | Convierte cualquier excepción cruda de línea malformada en `MapParseError` con línea en un solo sitio; guardianes explícitos solo donde hay bug silencioso o cabe un mensaje más claro |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -50,7 +54,7 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 | Nace en | Carpeta | Por qué nace ahí |
 | --- | --- | --- |
 | M1 (hecho) | `backend/flyin/domain`, `.../parsing` | Entidades puras; entrada texto→dominio |
-| M1.9 | `shared/exceptions.py` | Cuando los errores de parseo se repiten y piden un tipo común |
+| M1.9 (hecho) | `shared/exceptions.py` | Nació con `MapParseError`: los errores de parseo se repetían y pedían un tipo común |
 | M2 | `pathfinding` | Grafo propio + algoritmos de rutas |
 | M3 | `simulation` (motor `simulate()`) + `cli` | La costura reusable + su primer cliente |
 | M4 | `scheduling` | Reservas de capacidad/tiempo |
@@ -108,3 +112,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-04 | Slice M1.6 (#10): duplicados de conexión no dirigidos (`frozenset({a,b})` + `set` de vistos) y self-loops rechazados en `_resolve_connections`; fixtures `invalid_duplicate_connection.txt` e `invalid_self_loop.txt`. Cierra #10 | pytest 16 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.7 (#11): `ZoneType.move_cost` (`match`: normal/priority=1, restricted=2, blocked=None); `tests/domain/test_zone.py` nuevo; fixture `valid_zone_types.txt` extendida con `blocked`. Cierra #11 | pytest 18 passed, lint/type en verde |
 | 2026-08-04 | Slice M1.8 (#12): validación de capacidad ≥1 en `_optional_capacity` (antes `_optional_int`) con línea física; 0 terminal ignorado (no error); adoptado `invalid_zero_capacity.txt`, nuevos `invalid_zero_link_capacity.txt` y `valid_terminal_zero_capacity_ignored.txt`. Cierra #12 | pytest 21 passed, lint/type en verde |
+| 2026-08-04 | Slice M1.9 (#13): nace `flyin/shared/` con `MapParseError`; 11 raises migrados; `try/except` envolvente por línea + guardianes (mapa vacío, nb_drones no numérico, corchete sin cerrar); tests migrados a `MapParseError` + parametrizado de input malformado. Cierra #13 y M1 | pytest 28 passed, lint/type en verde |
