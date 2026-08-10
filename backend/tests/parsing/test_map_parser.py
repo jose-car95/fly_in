@@ -4,6 +4,7 @@ import pytest
 
 from flyin.domain.zone import Zone, ZoneType
 from flyin.parsing.map_parser import MapParser
+from flyin.shared.exceptions import MapParseError
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures" / "edge-cases"
 
@@ -46,7 +47,7 @@ def test_error_reports_physical_line_number() -> None:
 
     # The first significant line sits at physical line 6 (four comments plus a
     # blank line precede it); the error must point there, not at line 1.
-    with pytest.raises(ValueError, match=r"line 6"):
+    with pytest.raises(MapParseError, match=r"line 6"):
         MapParser(text).parse()
 
 
@@ -111,7 +112,7 @@ def test_rejects_unknown_metadata_key() -> None:
 
     # 'speed' is not a valid tag anywhere; the error names the offending key
     # and its physical line so a typo cannot slip through silently.
-    with pytest.raises(ValueError, match=r"line 6.*speed"):
+    with pytest.raises(MapParseError, match=r"line 6.*speed"):
         MapParser(text).parse()
 
 
@@ -120,7 +121,7 @@ def test_rejects_metadata_key_in_wrong_context() -> None:
 
     # max_link_capacity is valid on a connection but not on a zone; the
     # context-aware whitelist rejects it here.
-    with pytest.raises(ValueError, match=r"line 6.*max_link_capacity"):
+    with pytest.raises(MapParseError, match=r"line 6.*max_link_capacity"):
         MapParser(text).parse()
 
 
@@ -129,7 +130,7 @@ def test_rejects_duplicate_zone_name() -> None:
 
     # A repeated name would silently overwrite the first zone; the name is
     # the zone's identifier, so the duplicate is an error at its line.
-    with pytest.raises(ValueError, match=r"line 7.*duplicate zone name"):
+    with pytest.raises(MapParseError, match=r"line 7.*duplicate zone name"):
         MapParser(text).parse()
 
 
@@ -137,7 +138,7 @@ def test_rejects_multiple_start_hub() -> None:
     text = (FIXTURES_DIR / "invalid_multiple_start_hub.txt").read_text()
 
     # A map must declare exactly one start hub; the second one is rejected.
-    with pytest.raises(ValueError, match=r"line 6.*start_hub"):
+    with pytest.raises(MapParseError, match=r"line 6.*start_hub"):
         MapParser(text).parse()
 
 
@@ -145,7 +146,7 @@ def test_rejects_multiple_end_hub() -> None:
     text = (FIXTURES_DIR / "invalid_multiple_end_hub.txt").read_text()
 
     # Symmetric to the start hub: exactly one end hub is allowed.
-    with pytest.raises(ValueError, match=r"line 7.*end_hub"):
+    with pytest.raises(MapParseError, match=r"line 7.*end_hub"):
         MapParser(text).parse()
 
 
@@ -154,7 +155,7 @@ def test_rejects_connection_to_undefined_zone() -> None:
 
     # 'ghost' is never defined as a zone; the dangling reference is rejected
     # at the connection's physical line.
-    with pytest.raises(ValueError, match=r"line 9.*ghost"):
+    with pytest.raises(MapParseError, match=r"line 9.*ghost"):
         MapParser(text).parse()
 
 
@@ -174,7 +175,7 @@ def test_rejects_duplicate_undirected_connection() -> None:
 
     # A-B and B-A denote the same undirected link; the second declaration is
     # a duplicate, rejected at its physical line.
-    with pytest.raises(ValueError, match=r"line 8.*duplicate connection"):
+    with pytest.raises(MapParseError, match=r"line 8.*duplicate connection"):
         MapParser(text).parse()
 
 
@@ -183,7 +184,7 @@ def test_rejects_self_loop_connection() -> None:
 
     # A connection from a zone to itself is meaningless for routing and is
     # not defined by the subject, so it is rejected.
-    with pytest.raises(ValueError, match=r"line 9.*self-loop"):
+    with pytest.raises(MapParseError, match=r"line 9.*self-loop"):
         MapParser(text).parse()
 
 
@@ -191,7 +192,7 @@ def test_rejects_zero_max_drones() -> None:
     text = (FIXTURES_DIR / "invalid_zero_capacity.txt").read_text()
 
     # A capacity of 0 means no drone fits; it must be at least 1.
-    with pytest.raises(ValueError, match=r"line 6.*max_drones.*at least 1"):
+    with pytest.raises(MapParseError, match=r"line 6.*max_drones.*at least 1"):
         MapParser(text).parse()
 
 
@@ -200,7 +201,7 @@ def test_rejects_zero_link_capacity() -> None:
 
     # Link capacity is validated just like zone capacity.
     with pytest.raises(
-        ValueError, match=r"line 8.*max_link_capacity.*at least 1"
+        MapParseError, match=r"line 8.*max_link_capacity.*at least 1"
     ):
         MapParser(text).parse()
 
@@ -215,3 +216,46 @@ def test_ignores_invalid_max_drones_on_terminal() -> None:
     # max_drones is ignored on terminals before the >= 1 check runs, so an
     # invalid 0 there is not an error: the terminal stays unlimited (None).
     assert result.start.max_drones is None
+
+
+@pytest.mark.parametrize(
+    "text, match",
+    [
+        ("", r"no significant lines"),
+        (
+            "nb_drones: two\nstart_hub: s 0 0\nend_hub: e 1 0\n"
+            "connection: s-e\n",
+            r"line 1.*nb_drones"
+        ),
+        (
+            "nb_drones: 1\nstart_hub: s 0\nend_hub: e 1 0\n"
+            "connection: s-e\n",
+            r"line 2"
+        ),
+        (
+            "nb_drones: 1\nstart_hub: s x 0\nend_hub: e 1 0\n"
+            "connection: s-e\n",
+            r"line 2"
+        ),
+        (
+            "nb_drones: 1\nstart_hub: s 0 0\nhub: m 2 0 [max_drones=x]\n"
+            "end_hub: e 1 0\nconnection: s-m\nconnection: m-e\n",
+            r"line 3"
+        ),
+        (
+            "nb_drones: 1\nstart_hub: s 0 0 [color=green\nend_hub: e 1 0\n"
+            "connection: s-e\n",
+            r"line 2.*unclosed"
+        ),
+        (
+            "nb_drones: 1\nstart_hub: s 0 0\nend_hub: e 1 0\n"
+            "connection: se\n",
+            r"line 4"
+        )
+    ]
+)
+def test_rejects_malformed_input(text: str, match: str) -> None:
+    # Every malformed line raises a typed MapParseError carrying its physical
+    # line, never a bare Python ValueError or IndexError.
+    with pytest.raises(MapParseError, match=match):
+        MapParser(text).parse()

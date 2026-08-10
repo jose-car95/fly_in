@@ -12,6 +12,7 @@ from enum import Enum
 from flyin.domain.connection import Connection
 from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import Zone, ZoneType
+from flyin.shared.exceptions import MapParseError
 
 
 class LinePrefix(str, Enum):
@@ -73,13 +74,18 @@ class MapParser:
             hubs exposed directly.
 
         Raises:
-            ValueError: If the map is malformed: the first significant line is
-                not ``nb_drones:``, a start or end hub is missing or declared
-                more than once, a zone name is duplicated, or a connection is
-                a self-loop, names an undefined zone, or repeats an undirected
-                pair.
+            MapParseError: If the map is malformed in any way: it is empty,
+                the first significant line is not ``nb_drones:``, a line has
+                the wrong shape or a non-integer field, a start or end hub is
+                missing or declared more than once, a zone name is duplicated,
+                or a connection is a self-loop, names an undefined zone, or
+                repeats an undirected pair.
         """
         lines = self._significant_lines()
+        if not lines:
+            raise MapParseError(
+                "map has no significant lines (empty or comments only)"
+            )
 
         nb_drones = self._parse_nb_drones(lines[0])
         zones: dict[str, Zone] = {}
@@ -88,33 +94,39 @@ class MapParser:
         end: Zone | None = None
 
         for lineno, line in lines[1:]:
-            if line.startswith(LinePrefix.START_HUB):
-                if start is not None:
-                    raise ValueError(
-                        f"line {lineno}: multiple start_hub declared"
+            # A single guard turns any raw ValueError of a malformed line
+            # (int(), tuple unpacking) into a MapParseError carrying the line;
+            # our own MapParseError is not a ValueError, so it passes through.
+            try:
+                if line.startswith(LinePrefix.START_HUB):
+                    if start is not None:
+                        raise MapParseError(
+                            f"line {lineno}: multiple start_hub declared"
+                        )
+                    start = self._parse_zone(
+                        line, LinePrefix.START_HUB, lineno, is_start=True
                     )
-                start = self._parse_zone(
-                    line, LinePrefix.START_HUB, lineno, is_start=True
-                )
-                self._add_zone(zones, start, lineno)
-            elif line.startswith(LinePrefix.END_HUB):
-                if end is not None:
-                    raise ValueError(
-                        f"line {lineno}: multiple end_hub declared"
+                    self._add_zone(zones, start, lineno)
+                elif line.startswith(LinePrefix.END_HUB):
+                    if end is not None:
+                        raise MapParseError(
+                            f"line {lineno}: multiple end_hub declared"
+                        )
+                    end = self._parse_zone(
+                        line, LinePrefix.END_HUB, lineno, is_end=True
                     )
-                end = self._parse_zone(
-                    line, LinePrefix.END_HUB, lineno, is_end=True
-                )
-                self._add_zone(zones, end, lineno)
-            elif line.startswith(LinePrefix.HUB):
-                hub = self._parse_zone(line, LinePrefix.HUB, lineno)
-                self._add_zone(zones, hub, lineno)
-            elif line.startswith(LinePrefix.CONNECTION):
-                connection = self._parse_connection(line, lineno)
-                pending.append((lineno, connection))
+                    self._add_zone(zones, end, lineno)
+                elif line.startswith(LinePrefix.HUB):
+                    hub = self._parse_zone(line, LinePrefix.HUB, lineno)
+                    self._add_zone(zones, hub, lineno)
+                elif line.startswith(LinePrefix.CONNECTION):
+                    connection = self._parse_connection(line, lineno)
+                    pending.append((lineno, connection))
+            except ValueError as exc:
+                raise MapParseError(f"line {lineno}: {exc}") from exc
 
         if start is None or end is None:
-            raise ValueError(
+            raise MapParseError(
                 "map must declare exactly one start_hub and one end_hub"
             )
 
@@ -142,10 +154,10 @@ class MapParser:
             lineno: Physical 1-based line number, used for error messages.
 
         Raises:
-            ValueError: If ``zone.name`` is already present.
+            MapParseError: If ``zone.name`` is already present.
         """
         if zone.name in zones:
-            raise ValueError(
+            raise MapParseError(
                 f"line {lineno}: duplicate zone name {zone.name!r}"
             )
         zones[zone.name] = zone
@@ -173,25 +185,25 @@ class MapParser:
             The connections, in their original order.
 
         Raises:
-            ValueError: If a connection is a self-loop, names an undefined
+            MapParseError: If a connection is a self-loop, names an undefined
                 zone, or repeats an undirected pair already seen.
         """
         seen: set[frozenset[str]] = set()
         for lineno, connection in pending:
             if connection.zone_a == connection.zone_b:
-                raise ValueError(
+                raise MapParseError(
                     f"line {lineno}: self-loop on zone {connection.zone_a!r}"
                 )
             for endpoint in (connection.zone_a, connection.zone_b):
                 if endpoint not in zones:
-                    raise ValueError(
+                    raise MapParseError(
                         f"line {lineno}: connection references undefined "
                         f"zone {endpoint!r}"
                     )
             # An undirected pair keyed as a set ignores endpoint order.
             link = frozenset((connection.zone_a, connection.zone_b))
             if link in seen:
-                raise ValueError(
+                raise MapParseError(
                     f"line {lineno}: duplicate connection between "
                     f"{connection.zone_a!r} and {connection.zone_b!r}"
                 )
@@ -229,15 +241,22 @@ class MapParser:
             The declared number of drones.
 
         Raises:
-            ValueError: If the line does not start with ``nb_drones:``.
+            MapParseError: If the line does not start with ``nb_drones:`` or
+                its value is not an integer.
         """
         lineno, line = numbered_line
         if not line.startswith(LinePrefix.NB_DRONES):
-            raise ValueError(
+            raise MapParseError(
                 f"line {lineno}: expected 'nb_drones:' as the first "
                 f"significant line, got: {line!r}"
             )
-        return int(line.removeprefix(LinePrefix.NB_DRONES).strip())
+        value = line.removeprefix(LinePrefix.NB_DRONES).strip()
+        try:
+            return int(value)
+        except ValueError as exc:
+            raise MapParseError(
+                f"line {lineno}: nb_drones must be an integer, got {value!r}"
+            ) from exc
 
     def _parse_zone(
         self,
@@ -268,8 +287,8 @@ class MapParser:
             The zone described by the line.
 
         Raises:
-            ValueError: If the line carries a metadata tag that is not valid
-                on a zone, or a ``max_drones`` capacity below 1.
+            MapParseError: If the line carries a metadata tag that is not
+                valid on a zone, or a ``max_drones`` capacity below 1.
         """
         name, x_str, y_str, *_ = line.removeprefix(prefix).split()
         metadata = self._parse_metadata(line, lineno, MetadataKeys.ZONE)
@@ -313,18 +332,21 @@ class MapParser:
             when the line carries no ``[...]`` block.
 
         Raises:
-            ValueError: If a tag key is not in ``allowed``.
+            MapParseError: If the ``[`` block is not closed or a tag key is
+                not in ``allowed``.
         """
         open_bracket = line.find("[")
         if open_bracket == -1:
             return {}
         close_bracket = line.find("]", open_bracket)
+        if close_bracket == -1:
+            raise MapParseError(f"line {lineno}: unclosed '[' in metadata")
         body = line[open_bracket + 1:close_bracket]
         metadata: dict[str, str] = {}
         for token in body.split():
             key, value = token.split("=", maxsplit=1)
             if key not in allowed.value:
-                raise ValueError(
+                raise MapParseError(
                     f"line {lineno}: unknown metadata key {key!r}"
                 )
             metadata[key] = value
@@ -348,14 +370,14 @@ class MapParser:
             The tag's integer value, or ``None`` when the tag is absent.
 
         Raises:
-            ValueError: If the tag is present but not at least 1.
+            MapParseError: If the tag is present but not at least 1.
         """
         value = metadata.get(key)
         if value is None:
             return None
         capacity = int(value)
         if capacity < 1:
-            raise ValueError(
+            raise MapParseError(
                 f"line {lineno}: {key} must be at least 1, got {capacity}"
             )
         return capacity
@@ -376,8 +398,8 @@ class MapParser:
             The connection between the two named zones.
 
         Raises:
-            ValueError: If the line carries a metadata tag that is not valid
-                on a connection, or a ``max_link_capacity`` below 1.
+            MapParseError: If the line carries a metadata tag that is not
+                valid on a connection, or a ``max_link_capacity`` below 1.
         """
         metadata = self._parse_metadata(
             line, lineno, MetadataKeys.CONNECTION
