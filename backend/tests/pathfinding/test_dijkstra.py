@@ -82,3 +82,51 @@ def test_returns_none_when_end_is_unreachable() -> None:
     connections = [Connection("start", "island")]
 
     assert _dijkstra(zones, connections).shortest_path() is None
+
+
+def test_prefers_a_priority_zone_on_equal_cost() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "plain": Zone("plain", 1, 1),
+        "vip": Zone("vip", 1, -1, zone_type=ZoneType.PRIORITY),
+        "goal": Zone("goal", 2, 0, is_end=True)
+    }
+    connections = [
+        Connection("start", "plain"),
+        Connection("plain", "goal"),
+        Connection("start", "vip"),
+        Connection("vip", "goal")
+    ]
+
+    path = _dijkstra(zones, connections).shortest_path()
+
+    # Both routes cost 2 turns, but the route through the priority zone 'vip'
+    # wins the tie -- even though 'plain' sorts first by name.
+    assert path is not None
+    assert path.zones == ("start", "vip", "goal")
+    assert path.cost == 2
+
+
+def test_priority_preference_never_sacrifices_turns() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "vip": Zone("vip", 1, 1, zone_type=ZoneType.PRIORITY),
+        "mid": Zone("mid", 2, 1),
+        "plain": Zone("plain", 1, -1),
+        "goal": Zone("goal", 3, 0, is_end=True)
+    }
+    connections = [
+        Connection("start", "vip"),
+        Connection("vip", "mid"),
+        Connection("mid", "goal"),
+        Connection("start", "plain"),
+        Connection("plain", "goal")
+    ]
+
+    path = _dijkstra(zones, connections).shortest_path()
+
+    # The priority route start-vip-mid-goal costs 3 turns; the plain route
+    # costs 2. Priority only breaks ties, so the cheaper route still wins.
+    assert path is not None
+    assert path.zones == ("start", "plain", "goal")
+    assert path.cost == 2

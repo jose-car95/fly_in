@@ -3,6 +3,7 @@
 import heapq
 
 from flyin.domain.fly_in_map import FlyInMap
+from flyin.domain.zone import ZoneType
 from flyin.graph.graph import Graph
 from flyin.pathfinding.path import Path
 
@@ -15,6 +16,11 @@ class Dijkstra:
     first time a zone is popped its cost is final. The cost of entering a zone
     is its type's ``move_cost`` (normal/priority 1, restricted 2); the start
     zone is where the drone already sits, so reaching it costs nothing.
+
+    Zones are ordered by the key ``(turns, -priority_count)``: fewer turns
+    always wins, and on a tie the route through more ``priority`` zones is
+    preferred (the subject asks priority to be preferred, but never at the
+    cost of extra turns). The zone name is the final, deterministic tie-break.
 
     ``heapq`` supplies the priority queue (a plain data structure); the
     algorithm itself is written here, no graph/pathfinding library involved.
@@ -43,27 +49,30 @@ class Dijkstra:
         """
         start = self._map.start.name
         end = self._map.end.name
-        best: dict[str, int] = {start: 0}
+        # Ordering key per zone: (turns, -priority_count). A smaller tuple is
+        # better, so fewer turns wins and, on a tie, more priority zones wins.
+        best: dict[str, tuple[int, int]] = {start: (0, 0)}
         came_from: dict[str, str] = {}
-        # (accumulated_cost, zone); heapq keeps the cheapest entry on top.
-        frontier: list[tuple[int, str]] = [(0, start)]
+        frontier: list[tuple[int, int, str]] = [(0, 0, start)]
         while frontier:
-            cost, zone = heapq.heappop(frontier)
+            turns, neg_priority, zone = heapq.heappop(frontier)
             if zone == end:
-                return self._reconstruct(came_from, end, cost)
-            if cost > best[zone]:
-                # A cheaper route was already settled: this entry is stale.
+                return self._reconstruct(came_from, end, turns)
+            if (turns, neg_priority) > best[zone]:
+                # A better route was already settled: this entry is stale.
                 continue
             for neighbor in self._graph.neighbors(zone):
-                step = self._map.zones[neighbor].zone_type.move_cost
+                zone_type = self._map.zones[neighbor].zone_type
+                step = zone_type.move_cost
                 if step is None:
                     # A blocked zone is impassable; never step into it.
                     continue
-                new_cost = cost + step
-                if neighbor not in best or new_cost < best[neighbor]:
-                    best[neighbor] = new_cost
+                priority_bonus = 1 if zone_type is ZoneType.PRIORITY else 0
+                key = (turns + step, neg_priority - priority_bonus)
+                if neighbor not in best or key < best[neighbor]:
+                    best[neighbor] = key
                     came_from[neighbor] = zone
-                    heapq.heappush(frontier, (new_cost, neighbor))
+                    heapq.heappush(frontier, (key[0], key[1], neighbor))
         return None
 
     @staticmethod

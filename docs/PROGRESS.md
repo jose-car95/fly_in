@@ -5,17 +5,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M2 en progreso** (M0 y M1 cerrados). Grafo + Dijkstra hechos; falta el
-  desempate determinista con preferencia priority (M2.3).
-- Último slice completado: M2.2 — nace `flyin/pathfinding/` con `Dijkstra` y `Path`.
-  Camino de menor coste `start → end` con `heapq` (cola de prioridad de la stdlib; el
-  algoritmo es nuestro, sin librería de grafos). Coste = suma de `move_cost` de cada
-  zona entrada; start cuesta 0. Borrado perezoso (`cost > best[zone]` salta entradas
-  obsoletas). Si `end` es inalcanzable → devuelve `None` (el pathfinder no decide el
-  error de usuario). Empates ya rotos por nombre vía `heapq` (la preferencia priority es
-  M2.3). Tests en `tests/pathfinding/` (incluye el caso donde BFS elegiría mal).
-- Anterior: M2.1 — `flyin/graph/` con `Graph`: adyacencia transitable no dirigida
-  (`dict[str, set[str]]`), `blocked` fuera, `neighbors()` → `frozenset`.
+- Milestone: **M2 casi completo** (M0 y M1 cerrados). Grafo + Dijkstra + desempate
+  hechos; solo falta "documentar complejidad" del checklist de la épica #16.
+- Último slice completado: M2.3 — desempate determinista + preferencia `priority`. La
+  clave de Dijkstra pasa de `turns` a la tupla `(turns, −nº_priority)`: a igual coste
+  gana la ruta con más zonas priority, y priority NUNCA sacrifica turnos (turns es el
+  componente primario). El nombre de zona es el desempate final estable (3er elemento
+  de la tupla del heap). `Path` sin cambios (coste = turnos). Tests: priority a coste
+  igual + guard de que no sacrifica turnos.
+- Anterior: M2.2 — `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con
+  `heapq`, borrado perezoso, `None` si inalcanzable. M2.1 — `flyin/graph/` con `Graph`.
 - Anterior: M1.9 — modelo de error único. Nace `shared/exceptions.py`
   con `MapParseError(Exception)`; los 11 raises del parser migran a ese tipo. Un solo
   `try/except` por línea envuelve cualquier excepción cruda (`int()`, unpack) en
@@ -26,8 +25,9 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 - Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
   26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
   (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M2.3** — desempate determinista + preferencia `priority`
-  a coste igual (clave `(turnos, −nº_priority)`, ver SPEC_NOTES §3), cerrando M2.
+- Siguiente paso propuesto: cerrar M2 documentando la **complejidad** de grafo +
+  Dijkstra (Big-O), último ítem del checklist de la épica #16. Luego M3 (motor de
+  simulación + CLI).
 
 ## Decisiones tomadas
 
@@ -125,3 +125,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-04 | Housekeeping: borradas 3 fixtures huérfanas; borradas 8 ramas remotas mergeadas; activado `deleteBranchOnMerge`; registrada decisión de Dijkstra único (épica #16 y PROGRESS) | 28 passed, sin cambios de código |
 | 2026-08-04 | Slice M2.1 (épica #16): nace `flyin/graph/` con `Graph`; adyacencia transitable no dirigida (`dict[str, set]`), `blocked` fuera; `neighbors()` → `frozenset`; `tests/graph/` nuevo | pytest 30 passed, lint/type en verde |
 | 2026-08-11 | Slice M2.2 (épica #16): nace `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con `heapq`, borrado perezoso, `None` si inalcanzable; `tests/pathfinding/` nuevo | pytest 33 passed, lint/type en verde |
+| 2026-08-11 | Slice M2.3 (épica #16): clave de Dijkstra `(turnos, −nº_priority)` → preferencia priority a coste igual sin sacrificar turnos, desempate final por nombre; 2 tests nuevos | pytest 35 passed, lint/type en verde |
