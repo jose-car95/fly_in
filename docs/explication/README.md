@@ -10,3 +10,4 @@ cada pieza sin depender de prosa generada.
 | Fichero | Explica |
 | --- | --- |
 | `dijkstra-queue.html` | Traza paso a paso de la cola de prioridad en Dijkstra |
+| `complexity.html` | Big-O desde cero + la complejidad del grafo y de Dijkstra |

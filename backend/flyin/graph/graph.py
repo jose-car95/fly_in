@@ -44,7 +44,8 @@ class Graph:
         """Turn zones and connections into an undirected adjacency.
 
         Only passable (non-blocked) zones become nodes, and an edge is kept
-        only when both of its endpoints are passable.
+        only when both of its endpoints are passable. This runs in O(V + E):
+        each zone and connection is touched once.
 
         Args:
             fly_in_map: The parsed map to read zones and connections from.
