@@ -5,13 +5,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M2 en progreso** (M0 y M1 cerrados). Nace el grafo propio; luego Dijkstra.
-- Último slice completado: M2.1 — nace `flyin/graph/` con la clase `Graph`. Construye
-  desde un `FlyInMap` la adyacencia transitable NO DIRIGIDA como lista de adyacencia
-  (`dict[str, set[str]]`, idiomática para grafos dispersos, sin librerías). Las zonas
-  `blocked` quedan FUERA: no son nodos y ninguna arista las toca (una conexión con
-  extremo blocked no aporta arista). `neighbors(nombre)` devuelve un `frozenset` nuevo.
-  Aún sin pesos ni caminos (eso es M2.2/M2.3). Tests de grafo nuevos en `tests/graph/`.
+- Milestone: **M2 en progreso** (M0 y M1 cerrados). Grafo + Dijkstra hechos; falta el
+  desempate determinista con preferencia priority (M2.3).
+- Último slice completado: M2.2 — nace `flyin/pathfinding/` con `Dijkstra` y `Path`.
+  Camino de menor coste `start → end` con `heapq` (cola de prioridad de la stdlib; el
+  algoritmo es nuestro, sin librería de grafos). Coste = suma de `move_cost` de cada
+  zona entrada; start cuesta 0. Borrado perezoso (`cost > best[zone]` salta entradas
+  obsoletas). Si `end` es inalcanzable → devuelve `None` (el pathfinder no decide el
+  error de usuario). Empates ya rotos por nombre vía `heapq` (la preferencia priority es
+  M2.3). Tests en `tests/pathfinding/` (incluye el caso donde BFS elegiría mal).
+- Anterior: M2.1 — `flyin/graph/` con `Graph`: adyacencia transitable no dirigida
+  (`dict[str, set[str]]`), `blocked` fuera, `neighbors()` → `frozenset`.
 - Anterior: M1.9 — modelo de error único. Nace `shared/exceptions.py`
   con `MapParseError(Exception)`; los 11 raises del parser migran a ese tipo. Un solo
   `try/except` por línea envuelve cualquier excepción cruda (`int()`, unpack) en
@@ -19,12 +23,11 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   no numérico y corchete sin cerrar. `MapParseError` NO hereda de `ValueError` para que
   el envolvente no capture sus propios errores. Tests migrados a `MapParseError` + test
   parametrizado de input malformado. Cierra el issue #13 y **todo M1**.
-- Verificado con comandos: `pytest` (30 passed: 2 dominio + 2 grafo + 26 parser),
-  `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint` (sin errores,
-  14 ficheros). `make lint` y `make test` también en verde tal cual los corre la CI.
-- Siguiente paso propuesto: **M2.2** — Dijkstra sobre el grafo: camino de menor coste
-  (con `ZoneType.move_cost`) y detección de mapa no resoluble (end inalcanzable). Nace
-  `flyin/pathfinding/`.
+- Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
+  26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
+  (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
+- Siguiente paso propuesto: **M2.3** — desempate determinista + preferencia `priority`
+  a coste igual (clave `(turnos, −nº_priority)`, ver SPEC_NOTES §3), cerrando M2.
 
 ## Decisiones tomadas
 
@@ -61,7 +64,7 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 | M1 (hecho) | `backend/flyin/domain`, `.../parsing` | Entidades puras; entrada texto→dominio |
 | M1.9 (hecho) | `shared/exceptions.py` | Nació con `MapParseError`: los errores de parseo se repetían y pedían un tipo común |
 | M2.1 (hecho) | `graph` | La adyacencia transitable propia, sin librerías |
-| M2.2 | `pathfinding` | Dijkstra sobre el grafo (camino de menor coste + resoluble) |
+| M2.2 (hecho) | `pathfinding` | Dijkstra sobre el grafo (camino de menor coste + resoluble) |
 | M3 | `simulation` (motor `simulate()`) + `cli` | La costura reusable + su primer cliente |
 | M4 | `scheduling` | Reservas de capacidad/tiempo |
 | M5 | `benchmark` | Comparar algoritmos / métricas |
@@ -121,3 +124,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-04 | Slice M1.9 (#13): nace `flyin/shared/` con `MapParseError`; 11 raises migrados; `try/except` envolvente por línea + guardianes (mapa vacío, nb_drones no numérico, corchete sin cerrar); tests migrados a `MapParseError` + parametrizado de input malformado. Cierra #13 y M1 | pytest 28 passed, lint/type en verde |
 | 2026-08-04 | Housekeeping: borradas 3 fixtures huérfanas; borradas 8 ramas remotas mergeadas; activado `deleteBranchOnMerge`; registrada decisión de Dijkstra único (épica #16 y PROGRESS) | 28 passed, sin cambios de código |
 | 2026-08-04 | Slice M2.1 (épica #16): nace `flyin/graph/` con `Graph`; adyacencia transitable no dirigida (`dict[str, set]`), `blocked` fuera; `neighbors()` → `frozenset`; `tests/graph/` nuevo | pytest 30 passed, lint/type en verde |
+| 2026-08-11 | Slice M2.2 (épica #16): nace `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con `heapq`, borrado perezoso, `None` si inalcanzable; `tests/pathfinding/` nuevo | pytest 33 passed, lint/type en verde |
