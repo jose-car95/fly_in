@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Complejidad (Big-O) — grafo y Dijkstra</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1c2330; --muted: #5b6675;
+    --line: #d7dce3; --accent: #2563eb; --good: #16a34a; --warn: #f59e0b;
+    --bad: #dc2626; --chip: #eef1f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f141b; --card: #171d26; --ink: #e7ecf3; --muted: #9aa6b5;
+      --line: #2a333f; --accent: #60a5fa; --good: #4ade80; --warn: #fbbf24;
+      --bad: #f87171; --chip: #212a35;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    padding: 2rem 1rem;
+  }
+  main { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.2rem; margin: 2rem 0 .6rem; }
+  h3 { font-size: 1rem; margin: 0 0 .3rem; }
+  .sub { color: var(--muted); margin: 0 0 1.4rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1rem 1.2rem; margin: 0 0 1rem;
+  }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th, td { border: 1px solid var(--line); padding: .45rem .6rem; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: var(--chip); }
+  .tag { font-weight: 700; }
+  .o1 { color: var(--good); } .olog { color: var(--good); }
+  .on { color: var(--accent); } .onlog { color: var(--warn); }
+  .on2 { color: var(--bad); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: .8rem; }
+  .k { border-left: 4px solid var(--accent); }
+  .k.good { border-color: var(--good); } .k.warn { border-color: var(--warn); }
+  .k.bad { border-color: var(--bad); }
+  .k p { margin: .2rem 0 0; color: var(--muted); font-size: .95rem; }
+  .chart { width: 100%; height: auto; display: block; }
+  .note { color: var(--muted); font-size: .95rem; }
+  .big { font-size: 1.05rem; }
+  .pill {
+    display: inline-block; background: var(--chip); border: 1px solid var(--line);
+    border-radius: 999px; padding: .1rem .7rem; font-family: ui-monospace, monospace;
+  }
+  .overflow { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Complejidad: cuánto crece el trabajo</h1>
+  <p class="sub">Big-O no mide segundos: mide <strong>cómo crece el número de
+    pasos</strong> cuando el problema se hace más grande. Es la <em>forma</em>
+    del crecimiento.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0">La única regla</h2>
+    <p style="margin:0 0 .4rem">Nos quedamos con el <strong>término que
+      manda</strong> y tiramos las constantes. <code>3n + 5</code> crece "como
+      <code>n</code>" → lo llamamos <span class="tag on">O(n)</span>.</p>
+    <p class="note" style="margin:0">¿Por qué? Con datos grandes, un
+      <code>+5</code> o un <code>×3</code> no cambian la <em>forma</em> de la
+      curva; solo importa la parte que más crece.</p>
+  </div>
+
+  <h2>Siente el crecimiento</h2>
+  <div class="card overflow">
+    <p class="sub" style="margin:0 0 .6rem">Pasos aproximados según el tamaño
+      del problema <code>n</code>:</p>
+    <table>
+      <thead><tr><th>n →</th><th>10</th><th>100</th><th>1.000</th>
+        <th>1.000.000</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag o1">O(1)</span> constante</td>
+          <td>1</td><td>1</td><td>1</td><td>1</td></tr>
+        <tr><td><span class="tag olog">O(log n)</span> logarítmico</td>
+          <td>~3</td><td>~7</td><td>~10</td><td>~20</td></tr>
+        <tr><td><span class="tag on">O(n)</span> lineal</td>
+          <td>10</td><td>100</td><td>1.000</td><td>1.000.000</td></tr>
+        <tr><td><span class="tag onlog">O(n log n)</span></td>
+          <td>~33</td><td>~700</td><td>~10.000</td><td>~20.000.000</td></tr>
+        <tr><td><span class="tag on2">O(n²)</span> cuadrático</td>
+          <td>100</td><td>10.000</td><td>1.000.000</td>
+          <td>1.000.000.000.000</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin:.6rem 0 0">Mira la última columna:
+      <span class="tag olog">O(log n)</span> hace <strong>20</strong> pasos
+      donde <span class="tag on2">O(n²)</span> hace <strong>un billón</strong>.
+      Esa diferencia es toda la partida.</p>
+  </div>
+
+  <div class="card">
+    <svg class="chart" viewBox="0 0 600 260" role="img"
+         aria-label="Curvas de crecimiento">
+      <style>
+        .ax { stroke: var(--line); stroke-width: 2; }
+        .lbl { fill: var(--muted); font: 12px system-ui; }
+        .c { fill: none; stroke-width: 3; }
+      </style>
+      <line class="ax" x1="50" y1="20" x2="50" y2="220"/>
+      <line class="ax" x1="50" y1="220" x2="580" y2="220"/>
+      <text class="lbl" x="8" y="30">pasos</text>
+      <text class="lbl" x="520" y="240">tamaño n →</text>
+      <!-- O(1) -->
+      <polyline class="c" style="stroke:var(--good)"
+        points="50,210 580,208"/>
+      <text class="lbl" x="560" y="200" style="fill:var(--good)">O(1)</text>
+      <!-- O(log n) -->
+      <polyline class="c" style="stroke:var(--good)"
+        points="50,210 120,180 220,165 350,155 580,148"/>
+      <text class="lbl" x="560" y="140" style="fill:var(--good)">O(log n)</text>
+      <!-- O(n) -->
+      <polyline class="c" style="stroke:var(--accent)"
+        points="50,215 580,60"/>
+      <text class="lbl" x="560" y="55" style="fill:var(--accent)">O(n)</text>
+      <!-- O(n log n) -->
+      <polyline class="c" style="stroke:var(--warn)"
+        points="50,215 200,150 350,90 470,45 520,25"/>
+      <text class="lbl" x="452" y="38" style="fill:var(--warn)">O(n log n)</text>
+      <!-- O(n^2) -->
+      <polyline class="c" style="stroke:var(--bad)"
+        points="50,218 150,205 250,175 330,120 390,60 425,25"/>
+      <text class="lbl" x="398" y="20" style="fill:var(--bad)">O(n²)</text>
+    </svg>
+    <p class="note" style="margin:0">La misma idea, en curvas: plana (ideal),
+      casi plana (log), recta (lineal), y las que se disparan (n log n, n²).</p>
+  </div>
+
+  <h2>Las clases, con una analogía</h2>
+  <div class="grid">
+    <div class="card k good"><h3><span class="o1">O(1)</span> constante</h3>
+      <p>Buscar en un diccionario (dict) por su clave: vas directo, da igual el
+        tamaño. <code>best[zone]</code>.</p></div>
+    <div class="card k good"><h3><span class="olog">O(log n)</span> log</h3>
+      <p>Adivinar un número del 1 al 1000 preguntando siempre por la mitad:
+        ~10 intentos. Cada paso <em>parte en dos</em>. Es lo que cuesta meter o
+        sacar del montículo.</p></div>
+    <div class="card k"><h3><span class="on">O(n)</span> lineal</h3>
+      <p>Leer una lista de principio a fin, una vez. Tocar cada zona / cada
+        conexión una sola vez.</p></div>
+    <div class="card k warn"><h3><span class="onlog">O(n log n)</span></h3>
+      <p>Hacer algo de coste <code>log n</code> para cada uno de los
+        <code>n</code> elementos. Ordenar una lista, por ejemplo.</p></div>
+    <div class="card k bad"><h3><span class="on2">O(n²)</span> cuadrático</h3>
+      <p>Comparar cada elemento con todos los demás (dos bucles anidados).
+        Crece muy rápido: a evitar si se puede.</p></div>
+  </div>
+
+  <h2>La complejidad de nuestro código</h2>
+  <p class="sub">Con <span class="pill">V</span> = nº de zonas (nodos) y
+    <span class="pill">E</span> = nº de conexiones (aristas).</p>
+
+  <div class="card">
+    <h3>Construir el grafo — <span class="tag on">O(V + E)</span></h3>
+    <p style="margin:.2rem 0 .5rem"><code>Graph._build_adjacency</code></p>
+    <ul style="margin:0">
+      <li>Marcar zonas transitables: recorre las <strong>V</strong> zonas → O(V).</li>
+      <li>Crear el diccionario de adyacencia vacío → O(V).</li>
+      <li>Recorrer las conexiones y añadir aristas → O(E), cada una O(1).</li>
+    </ul>
+    <p class="big" style="margin:.6rem 0 0">Total: <span class="tag on">O(V + E)</span>
+      — <strong>tocas cada zona y cada conexión una vez</strong>. Lineal.</p>
+  </div>
+
+  <div class="card">
+    <h3>Dijkstra — <span class="tag onlog">O((V + E) · log V)</span></h3>
+    <p style="margin:.2rem 0 .5rem"><code>Dijkstra.shortest_path</code></p>
+    <ul style="margin:0">
+      <li>Cada zona entra y sale de la cola de prioridad; meter/sacar del
+        montículo cuesta <span class="olog">O(log V)</span>.</li>
+      <li>Cada arista se relaja una vez → <strong>E</strong> relajaciones, cada
+        una puede empujar a la cola (otro <span class="olog">O(log V)</span>).</li>
+      <li><code>best</code> y <code>came_from</code> ocupan
+        <span class="on">O(V)</span> de memoria.</li>
+    </ul>
+    <p class="big" style="margin:.6rem 0 .2rem">Total:
+      <span class="tag onlog">O((V + E) · log V)</span> (a menudo escrito
+      <code>O(E log V)</code>).</p>
+    <p class="note" style="margin:0">El <span class="olog">log V</span> viene
+      <strong>solo de la cola de prioridad</strong> (el montículo). Sin ella,
+      buscar cada vez el nodo más barato costaría O(V) y el total sería O(V²).</p>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Para la defensa, en una frase</h2>
+    <p class="big" style="margin:0">"Construir el grafo es <strong>lineal</strong>
+      en el tamaño del mapa, <span class="tag on">O(V + E)</span>; y encontrar la
+      ruta con Dijkstra es <span class="tag onlog">O((V + E) log V)</span>, donde
+      el factor <code>log V</code> lo aporta el montículo que me da siempre el
+      nodo más barato."</p>
+  </div>
+</main>
+</body>
+</html>

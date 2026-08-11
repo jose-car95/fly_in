@@ -43,6 +43,9 @@ class Dijkstra:
     def shortest_path(self) -> Path | None:
         """Return the cheapest route from start to end.
 
+        Runs in O((V + E) log V): each zone and edge is processed once
+        and every heap operation costs O(log V).
+
         Returns:
             The cheapest :class:`Path`, or ``None`` when the end cannot be
             reached from the start (a disconnected or blocked-off map).

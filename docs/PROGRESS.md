@@ -5,8 +5,8 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M2 casi completo** (M0 y M1 cerrados). Grafo + Dijkstra + desempate
-  hechos; solo falta "documentar complejidad" del checklist de la épica #16.
+- Milestone: **M2 COMPLETO** (M0 y M1 cerrados). Grafo + Dijkstra + desempate priority
+  + complejidad documentada. Siguiente: M3 (motor de simulación determinista + CLI).
 - Último slice completado: M2.3 — desempate determinista + preferencia `priority`. La
   clave de Dijkstra pasa de `turns` a la tupla `(turns, −nº_priority)`: a igual coste
   gana la ruta con más zonas priority, y priority NUNCA sacrifica turnos (turns es el
@@ -25,9 +25,9 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 - Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
   26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
   (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
-- Siguiente paso propuesto: cerrar M2 documentando la **complejidad** de grafo +
-  Dijkstra (Big-O), último ítem del checklist de la épica #16. Luego M3 (motor de
-  simulación + CLI).
+- Siguiente paso propuesto: **M3** — motor de simulación determinista reusable
+  `simulate(map, settings)` + el primer CLI (salida exacta por turnos). Nace `simulation`
+  y `cli`; es donde el pathfinding se pone al servicio de mover drones de verdad.
 
 ## Decisiones tomadas
 
@@ -126,3 +126,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-04 | Slice M2.1 (épica #16): nace `flyin/graph/` con `Graph`; adyacencia transitable no dirigida (`dict[str, set]`), `blocked` fuera; `neighbors()` → `frozenset`; `tests/graph/` nuevo | pytest 30 passed, lint/type en verde |
 | 2026-08-11 | Slice M2.2 (épica #16): nace `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con `heapq`, borrado perezoso, `None` si inalcanzable; `tests/pathfinding/` nuevo | pytest 33 passed, lint/type en verde |
 | 2026-08-11 | Slice M2.3 (épica #16): clave de Dijkstra `(turnos, −nº_priority)` → preferencia priority a coste igual sin sacrificar turnos, desempate final por nombre; 2 tests nuevos | pytest 35 passed, lint/type en verde |
+| 2026-08-11 | Cierre M2 (épica #16): documentada la complejidad — O(V+E) grafo, O((V+E)·log V) Dijkstra — en docstrings y en `docs/explication/complexity.html` (Big-O desde cero). Cierra la épica | 35 passed, lint/type en verde |
