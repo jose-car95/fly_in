@@ -5,13 +5,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Nace el motor de simulación.
-- Último slice completado: M3.1 — nace `flyin/simulation/` con `Simulator`. Con
-  `nb_drones=1`, un dron (`D1`) recorre su ruta de Dijkstra un paso por turno y el motor
-  devuelve las líneas exactas (`["D1-a", "D1-b", "D1-goal"]`). Si `start` no alcanza
-  `end` → `UnsolvableMapError` (tipo nuevo en `shared/exceptions.py`, mapa bien formado
-  sin ruta; nunca simulación infinita). Aún sin bucle de turnos con estado, multi-dron,
-  tránsito restricted ni CLI. Tests en `tests/simulation/`.
+- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + primer CLI hechos.
+- Último slice completado: M3.2 — capa de aplicación + capa de adaptadores, explícitas.
+  Nace `flyin/application/` con `FlyinSolver.solve_text(texto) -> líneas` (el caso de
+  uso: parsear + simular, agnóstico a la fuente). Nace `flyin/adapters/` (capa de
+  presentación) con `adapters/cli/`: clase `Cli(out, err).run(argv)` (adaptador FINO,
+  full-OOP) + `arguments.py` (parseo de args aislado) + `flyin/__main__.py`. El CLI NO
+  llama a `MapParser`/`Simulator`: lee el fichero → `FlyinSolver.solve_text` → imprime;
+  errores a `stderr` (exit 0/1/2). Verificado `uv run python -m flyin <mapa>`. Tests en
+  `tests/adapters/cli/` y `tests/application/`.
+- Anterior: M3.1 — `flyin/simulation/` con `Simulator`; un dron recorre su ruta →
+  `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta.
 - Último slice completado: M2.3 — desempate determinista + preferencia `priority`. La
   clave de Dijkstra pasa de `turns` a la tupla `(turns, −nº_priority)`: a igual coste
   gana la ruta con más zonas priority, y priority NUNCA sacrifica turnos (turns es el
@@ -30,9 +34,10 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 - Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
   26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
   (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M3.2** — el primer CLI (leer fichero de mapa → simular →
-  imprimir la salida exacta por stdout, incl. el error claro si el mapa no es resoluble).
-  Nace `flyin/cli`. Luego: tránsito restricted de 2 turnos y multi-dron (gran parte M4).
+- Siguiente paso propuesto: **M3.3** — tránsito restricted de 2 turnos (token
+  `D<ID>-<conexión>` en vuelo, luego `D<ID>-<zona>` al llegar). Requiere ANTES resolver
+  la decisión abierta #14 (texto exacto del token de conexión) con `/decide`. Luego:
+  máquina de estados de turnos, validador independiente, y multi-dron (gran parte M4).
 
 ## Decisiones tomadas
 
@@ -58,6 +63,9 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-04 | M1.9: un único `try/except` por línea en vez de blindar cada `int()`/unpack | Convierte cualquier excepción cruda de línea malformada en `MapParseError` con línea en un solo sitio; guardianes explícitos solo donde hay bug silencioso o cabe un mensaje más claro |
 | 2026-08-04 | Un solo tipo `MapParseError` ahora; código (enum) + atributos estructurados solo cuando llegue la API | El único caller (CLI) maneja todos los errores igual (imprime y para); el detalle vive en el mensaje. Subclases o códigos legibles por máquina solo se justifican si un caller reacciona distinto o la API los serializa como datos — YAGNI hasta entonces. `MapParseError` como base deja esa evolución abierta y aditiva |
 | 2026-08-04 | M2: un único Dijkstra, sin BFS suelto | El grafo es ponderado (restricted=2), así que el camino mínimo es por coste → Dijkstra, no BFS. Dijkstra además da la alcanzabilidad gratis (end en coste infinito → mapa no resoluble), así que un BFS aparte para eso sería código redundante. BFS se usa como modelo mental para explicar Dijkstra, no se implementa |
+| 2026-08-12 | M3.2: el mapa entra como fichero-argumento; el núcleo es agnóstico a la fuente | El subject no fija stdin vs argumento; argumento es explícito, da mejores errores y encaja con un futuro menú de mapas. El motor recibe texto/objetos, así que futuras fuentes (stdin, menú, API, HTML) son adaptadores nuevos sin tocar el núcleo (puertos y adaptadores) |
+| 2026-08-12 | Introducir la capa de aplicación (`FlyinSolver`) YA, con un solo llamador (el CLI), en vez de esperar al 2º adaptador | Decisión de Jose: inversión de aprendizaje para entender las capas y dejar la costura lista para la API (consumidor futuro decidido). Se asume el "coste YAGNI" (abstracción con un cliente) a cambio de la claridad arquitectónica; la implementación se mantiene mínima (adaptador fino + orquestador fino) |
+| 2026-08-12 | Capa `adapters/` (con `cli/` dentro) y el CLI como CLASE, no función | La familia de adaptadores (cli, api, frontend) está decidida → agrupar bajo `adapters/` hace visible la capa de presentación sin ser especulativo. El CLI vuelve a clase para respetar el contrato full-OOP (defendible en 42) |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -71,7 +79,7 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 | M2.1 (hecho) | `graph` | La adyacencia transitable propia, sin librerías |
 | M2.2 (hecho) | `pathfinding` | Dijkstra sobre el grafo (camino de menor coste + resoluble) |
 | M3.1 (hecho) | `simulation` (motor `Simulator`) | La costura reusable de simulación |
-| M3.2 | `cli` | Primer cliente del motor: lee el mapa e imprime la salida |
+| M3.2 (hecho) | `application` (`FlyinSolver`) + `adapters/cli` | Caso de uso + su primer adaptador |
 | M4 | `scheduling` | Reservas de capacidad/tiempo |
 | M5 | `benchmark` | Comparar algoritmos / métricas |
 | Post-mandatory | `api` (FastAPI) | 2º cliente del motor: frontera REST |
@@ -134,3 +142,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-11 | Slice M2.3 (épica #16): clave de Dijkstra `(turnos, −nº_priority)` → preferencia priority a coste igual sin sacrificar turnos, desempate final por nombre; 2 tests nuevos | pytest 35 passed, lint/type en verde |
 | 2026-08-11 | Cierre M2 (épica #16): documentada la complejidad — O(V+E) grafo, O((V+E)·log V) Dijkstra — en docstrings y en `docs/explication/complexity.html` (Big-O desde cero). Cierra la épica | 35 passed, lint/type en verde |
 | 2026-08-11 | Slice M3.1 (épica #17): nace `flyin/simulation/` con `Simulator`; un dron recorre su ruta → líneas exactas `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta; `tests/simulation/` nuevo | pytest 37 passed, lint/type en verde |
+| 2026-08-12 | Slice M3.2 (épica #17): capa de aplicación `FlyinSolver.solve_text` + capa `flyin/adapters/` con `adapters/cli` (clase `Cli.run`) + `arguments.py` + `__main__.py`; el CLI no llama al parser, solo al solver; `tests/adapters/cli/` y `tests/application/` | pytest 44 passed, lint/type en verde |

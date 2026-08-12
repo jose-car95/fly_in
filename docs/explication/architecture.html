@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitectura por capas — cómo se arma una aplicación completa</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1c2330; --muted: #5b6675;
+    --line: #d7dce3; --accent: #2563eb; --good: #16a34a; --warn: #f59e0b;
+    --bad: #dc2626; --chip: #eef1f6; --violet: #7c3aed; --teal: #0d9488;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f141b; --card: #171d26; --ink: #e7ecf3; --muted: #9aa6b5;
+      --line: #2a333f; --accent: #60a5fa; --good: #4ade80; --warn: #fbbf24;
+      --bad: #f87171; --chip: #212a35; --violet: #a78bfa; --teal: #2dd4bf;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    padding: 2rem 1rem;
+  }
+  main { max-width: 940px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .3rem; }
+  h2 { font-size: 1.25rem; margin: 2.2rem 0 .6rem; }
+  h3 { font-size: 1rem; margin: 0 0 .3rem; }
+  .sub { color: var(--muted); margin: 0 0 1.4rem; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 1rem 1.2rem; margin: 0 0 1rem;
+  }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  code { background: var(--chip); border-radius: 5px; padding: .05rem .3rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th, td {
+    border: 1px solid var(--line); padding: .5rem .6rem; text-align: left;
+    vertical-align: top;
+  }
+  thead th { background: var(--chip); }
+  .note { color: var(--muted); font-size: .95rem; }
+  .big { font-size: 1.05rem; }
+  .overflow { overflow-x: auto; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: .8rem; }
+  .k { border-left: 4px solid var(--accent); }
+  .k p { margin: .25rem 0 0; color: var(--muted); font-size: .95rem; }
+  .k.dom { border-color: var(--good); }
+  .k.app { border-color: var(--accent); }
+  .k.inf { border-color: var(--warn); }
+  .k.pre { border-color: var(--violet); }
+  .chart { width: 100%; height: auto; display: block; }
+  .pill {
+    display: inline-block; background: var(--chip); border: 1px solid var(--line);
+    border-radius: 999px; padding: .1rem .7rem; font-size: .85rem;
+    font-family: ui-monospace, monospace;
+  }
+  .tag { font-weight: 700; }
+  .dom { color: var(--good); } .app { color: var(--accent); }
+  .inf { color: var(--warn); } .pre { color: var(--violet); }
+  .fut { color: var(--muted); }
+  /* pipeline */
+  .flow { display: grid; gap: .55rem; }
+  .step {
+    display: grid; grid-template-columns: 2.2rem 1fr; gap: .8rem;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: .7rem .9rem;
+  }
+  .step .n {
+    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    background: var(--chip); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .95rem;
+  }
+  .step h3 { font-size: .98rem; }
+  .step p { margin: .2rem 0 0; color: var(--muted); font-size: .93rem; }
+  .io {
+    margin-top: .4rem; font-family: ui-monospace, monospace; font-size: .85rem;
+    color: var(--ink); background: var(--chip); border: 1px solid var(--line);
+    border-radius: 6px; padding: .25rem .5rem; display: inline-block;
+  }
+  .arrow { text-align: center; color: var(--muted); line-height: 1; }
+  .layerbadge {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 700;
+  }
+  ul { margin: .3rem 0; padding-left: 1.2rem; }
+  li { margin: .15rem 0; }
+  .quote {
+    border-left: 4px solid var(--accent); padding-left: .9rem;
+    margin: .4rem 0 0; font-size: 1.03rem;
+  }
+  .soon { opacity: .62; }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Arquitectura: cómo se organiza una aplicación completa</h1>
+  <p class="sub"><strong>Arquitectura</strong> (de <em>architecture</em>) no es
+    "qué hace el programa", sino <strong>dónde vive cada cosa y quién puede
+    llamar a quién</strong>. Es el plano del edificio, no los muebles.</p>
+
+  <div class="card">
+    <h2 style="margin-top:0">El problema que resuelve</h2>
+    <p style="margin:.2rem 0 .5rem">Un programa pequeño cabe en un fichero. Pero
+      en cuanto crece, aparecen cosas muy distintas mezcladas: leer un fichero,
+      calcular una ruta, imprimir por pantalla, hablar con un navegador. Si
+      todo está revuelto, cambiar <em>una</em> cosa rompe <em>otras tres</em>.</p>
+    <p style="margin:0 0 .5rem"><strong>La analogía:</strong> una cocina de
+      restaurante. El camarero (atiende al cliente), el cocinero (transforma
+      ingredientes) y el almacén (guarda la comida) están separados a propósito.
+      Si mañana atiendes pedidos por teléfono en vez de en mesa, cambias el
+      camarero — <em>la receta del cocinero no se toca</em>.</p>
+    <p class="note" style="margin:0">Eso es exactamente lo que buscamos: que
+      añadir una API web o una interfaz React <strong>no obligue a tocar el
+      motor de simulación</strong>.</p>
+  </div>
+
+  <h2>La regla de oro: hacia dónde apuntan las flechas</h2>
+  <p class="sub">Las <strong>capas</strong> (<em>layers</em>) son anillos.
+    <strong>Las dependencias solo apuntan hacia dentro</strong>: lo de fuera
+    conoce lo de dentro, nunca al revés.</p>
+
+  <div class="card">
+    <svg class="chart" viewBox="0 0 640 330" role="img"
+         aria-label="Capas concéntricas: dominio en el centro, aplicación,
+                     infraestructura y presentación hacia fuera">
+      <style>
+        .box { fill: var(--card); stroke-width: 2; }
+        .t { font: 600 14px system-ui; fill: var(--ink); }
+        .ts { font: 12px ui-monospace, monospace; fill: var(--muted); }
+        .tb { font: 700 11px system-ui; letter-spacing: .06em; }
+        .ar { stroke: var(--muted); stroke-width: 2; fill: none; }
+      </style>
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3.2"
+                orient="auto">
+          <path d="M0,0 L8,3.2 L0,6.4 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+
+      <rect class="box" x="20" y="20" width="600" height="290" rx="16"
+            style="stroke:var(--violet)"/>
+      <text class="tb" x="40" y="45" style="fill:var(--violet)">PRESENTACIÓN
+        / ADAPTADORES</text>
+      <text class="ts" x="40" y="63">cli · api · frontend</text>
+
+      <rect class="box" x="70" y="78" width="500" height="200" rx="14"
+            style="stroke:var(--warn)"/>
+      <text class="tb" x="90" y="102" style="fill:var(--warn)">INFRAESTRUCTURA</text>
+      <text class="ts" x="90" y="120">parsing · ficheros · red</text>
+
+      <rect class="box" x="122" y="132" width="396" height="118" rx="12"
+            style="stroke:var(--accent)"/>
+      <text class="tb" x="142" y="155" style="fill:var(--accent)">APLICACIÓN</text>
+      <text class="ts" x="142" y="173">simulation · scheduling</text>
+
+      <rect class="box" x="180" y="185" width="280" height="50" rx="10"
+            style="stroke:var(--good)"/>
+      <text class="tb" x="200" y="206" style="fill:var(--good)">DOMINIO</text>
+      <text class="ts" x="200" y="224">Zone · Connection · FlyInMap</text>
+
+      <path class="ar" marker-end="url(#ah)" d="M600,150 L540,190"/>
+      <text class="ts" x="470" y="300">las flechas apuntan siempre
+        hacia dentro →</text>
+    </svg>
+    <p class="note" style="margin:.6rem 0 0">El <span class="tag dom">dominio</span>
+      es el corazón y <strong>no importa nada de nadie</strong>: no sabe si hay
+      ficheros, ni web, ni pantalla. Por eso es el trozo más estable y más fácil
+      de testear.</p>
+  </div>
+
+  <h2>Las capas clásicas, una por una</h2>
+  <div class="grid">
+    <div class="card k dom">
+      <span class="layerbadge dom">Capa 1</span>
+      <h3>Dominio</h3>
+      <p><strong>Qué es el mundo.</strong> Las cosas que existirían aunque el
+        programa no existiera: una zona, una conexión, un dron, y sus reglas
+        (una zona <code>blocked</code> es intransitable).</p>
+      <p><em>Analogía:</em> las reglas del ajedrez. Existen sin tablero físico
+        ni app.</p>
+    </div>
+    <div class="card k app">
+      <span class="layerbadge app">Capa 2</span>
+      <h3>Aplicación</h3>
+      <p><strong>Qué sabe hacer el sistema.</strong> Orquesta el dominio para
+        cumplir un caso de uso: "simula este mapa y dame las líneas de cada
+        turno".</p>
+      <p><em>Analogía:</em> el cocinero. Combina ingredientes siguiendo un
+        procedimiento; no atiende mesas ni va al mercado.</p>
+    </div>
+    <div class="card k inf">
+      <span class="layerbadge inf">Capa 3</span>
+      <h3>Infraestructura</h3>
+      <p><strong>Cómo se habla con el mundo exterior.</strong> Leer texto,
+        traducirlo a objetos, escribir en disco, consultar una base de datos.
+        Es lo "sucio" y lo que más cambia.</p>
+      <p><em>Analogía:</em> el almacén y los proveedores.</p>
+    </div>
+    <div class="card k pre">
+      <span class="layerbadge pre">Capa 4</span>
+      <h3>Presentación / Adaptadores</h3>
+      <p><strong>Quién pide las cosas y cómo se muestran.</strong> Un CLI, una
+        API REST, una interfaz web. Cada uno es una puerta distinta al
+        <em>mismo</em> motor.</p>
+      <p><em>Analogía:</em> el camarero (o el repartidor, o la web de pedidos).</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="big" style="margin:0"><strong>La prueba del algodón:</strong> si
+      borras la capa de presentación entera, el sistema sigue teniendo sentido y
+      los tests siguen pasando. Si borras el dominio, no queda nada.</p>
+  </div>
+
+  <h2>Cómo se llama todo eso en Fly-In</h2>
+  <p class="sub">Nuestras carpetas <strong>no</strong> se llaman
+    "aplicación/infraestructura": se llaman por lo que hacen. Este es el mapeo
+    real, carpeta a carpeta.</p>
+
+  <div class="card overflow">
+    <table>
+      <thead>
+        <tr><th>Capa clásica</th><th>Carpeta en <code>backend/flyin/</code></th>
+          <th>Clase principal</th><th>Responsabilidad</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag dom">Dominio</span></td>
+          <td><code>domain/</code></td>
+          <td><code>Zone</code>, <code>Connection</code>,
+            <code>FlyInMap</code></td>
+          <td>Qué es una zona, su tipo y su coste de movimiento. No sabe leer
+            ni imprimir nada.</td>
+        </tr>
+        <tr>
+          <td><span class="tag dom">Dominio</span> (transversal)</td>
+          <td><code>shared/</code></td>
+          <td><code>MapParseError</code>,
+            <code>UnsolvableMapError</code></td>
+          <td>Tipos comunes que cualquier capa puede usar. No depende de
+            ninguna otra.</td>
+        </tr>
+        <tr>
+          <td><span class="tag inf">Infraestructura</span></td>
+          <td><code>parsing/</code></td>
+          <td><code>MapParser</code></td>
+          <td>Traduce texto crudo → objetos de dominio, con errores por línea.
+            Es la <em>puerta de entrada</em> de los datos.</td>
+        </tr>
+        <tr>
+          <td><span class="tag app">Aplicación</span> (núcleo algorítmico)</td>
+          <td><code>graph/</code></td>
+          <td><code>Graph</code></td>
+          <td>Convierte el mapa en adyacencia transitable (fuera las zonas
+            <code>blocked</code>).</td>
+        </tr>
+        <tr>
+          <td><span class="tag app">Aplicación</span> (núcleo algorítmico)</td>
+          <td><code>pathfinding/</code></td>
+          <td><code>Dijkstra</code>, <code>Path</code></td>
+          <td>Ruta más barata sobre el grafo, y si el mapa es resoluble.</td>
+        </tr>
+        <tr>
+          <td><span class="tag app">Aplicación</span> (caso de uso)</td>
+          <td><code>simulation/</code></td>
+          <td><code>Simulator</code></td>
+          <td>El <strong>motor reusable</strong>: turno a turno, produce las
+            líneas exactas de salida. No sabe quién lo llama.</td>
+        </tr>
+        <tr class="soon">
+          <td><span class="tag app">Aplicación</span> <span class="pill">M4</span></td>
+          <td><code>scheduling/</code></td>
+          <td><em>por nacer</em></td>
+          <td>Reservas de capacidad y tiempo cuando haya varios drones.</td>
+        </tr>
+        <tr>
+          <td><span class="tag pre">Presentación</span></td>
+          <td><code>cli/</code></td>
+          <td><code>Cli</code> + <code>__main__.py</code></td>
+          <td>Primer cliente del motor: fichero → simular → stdout; errores a
+            stderr.</td>
+        </tr>
+        <tr class="soon">
+          <td><span class="tag pre">Presentación</span>
+            <span class="pill">post-mandatory</span></td>
+          <td><code>api/</code> (FastAPI)</td>
+          <td><em>por nacer</em></td>
+          <td>Segundo cliente del <em>mismo</em> motor: frontera REST (JSON).</td>
+        </tr>
+        <tr class="soon">
+          <td><span class="tag pre">Presentación</span>
+            <span class="pill">post-mandatory</span></td>
+          <td><code>frontend/</code> (React)</td>
+          <td><em>por nacer</em></td>
+          <td>Consume el JSON de la API y lo dibuja. Cero lógica de negocio.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin:.7rem 0 0">Fíjate en un detalle que sí puedes
+      defender: <code>graph/</code> y <code>pathfinding/</code> son
+      <strong>algoritmos puros</strong>. En una app de gestión típica no
+      existirían; aquí son el músculo del proyecto, por eso tienen carpeta
+      propia en vez de esconderse dentro de <code>simulation/</code>.</p>
+  </div>
+
+  <h2>El viaje de un mapa, de principio a fin</h2>
+  <p class="sub">Esto es lo que ocurre hoy, de verdad, cuando escribes
+    <code>python -m flyin maps/map1.txt</code>. Cada paso transforma un tipo de
+    dato en otro.</p>
+
+  <div class="flow">
+    <div class="step">
+      <div class="n">1</div>
+      <div>
+        <span class="layerbadge pre">Presentación · cli</span>
+        <h3><code>__main__.py</code> → <code>Cli.run(argv)</code></h3>
+        <p>Coge el nombre del fichero de los argumentos y lo lee del disco. Si
+          no se puede leer: mensaje a <em>stderr</em> y código de salida 1.</p>
+        <div class="io">argv: list[str] → text: str</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="step">
+      <div class="n">2</div>
+      <div>
+        <span class="layerbadge inf">Infraestructura · parsing</span>
+        <h3><code>MapParser(text).parse()</code></h3>
+        <p>Analiza el texto línea a línea y construye los objetos. Si algo está
+          mal, lanza <code>MapParseError</code> <strong>con el número de línea
+          físico</strong>. A partir de aquí, nadie vuelve a ver texto crudo.</p>
+        <div class="io">text: str → FlyInMap</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="step">
+      <div class="n">3</div>
+      <div>
+        <span class="layerbadge app">Aplicación · graph</span>
+        <h3><code>Graph(fly_in_map)</code></h3>
+        <p>Construye la <strong>adyacencia</strong> (quién es vecino de quién),
+          dejando fuera las zonas <code>blocked</code>. Coste
+          <code>O(V + E)</code>.</p>
+        <div class="io">FlyInMap → dict[str, set[str]]</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="step">
+      <div class="n">4</div>
+      <div>
+        <span class="layerbadge app">Aplicación · pathfinding</span>
+        <h3><code>Dijkstra(graph, map).shortest_path()</code></h3>
+        <p>Busca la ruta más barata de <code>start</code> a <code>end</code>.
+          Devuelve un <code>Path</code>, o <code>None</code> si no hay ruta.
+          Coste <code>O((V + E) · log V)</code>.</p>
+        <div class="io">Graph + FlyInMap → Path | None</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="step">
+      <div class="n">5</div>
+      <div>
+        <span class="layerbadge app">Aplicación · simulation</span>
+        <h3><code>Simulator(fly_in_map).run()</code></h3>
+        <p>El motor. Convierte la ruta en <strong>movimientos por turno</strong>
+          y devuelve las líneas exactas que pide el subject. Si no hay ruta,
+          lanza <code>UnsolvableMapError</code>.</p>
+        <div class="io">FlyInMap → list[str]  # ["D1-b", "D1-end"]</div>
+      </div>
+    </div>
+    <div class="arrow">▼</div>
+
+    <div class="step">
+      <div class="n">6</div>
+      <div>
+        <span class="layerbadge pre">Presentación · cli</span>
+        <h3><code>Cli</code> escribe el resultado</h3>
+        <p>Imprime una línea por turno en <em>stdout</em> y devuelve 0.
+          <strong>Los errores nunca contaminan stdout</strong>: van a stderr.</p>
+        <div class="io">list[str] → stdout + exit code</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p style="margin:0 0 .4rem"><strong>La observación clave:</strong> los pasos
+      2–5 <em>no saben que existe un terminal</em>. No hay un solo
+      <code>print()</code> en el motor. Toda la entrada/salida está encerrada en
+      el paso 1 y el 6.</p>
+    <p class="note" style="margin:0">Ese encierro es lo que llamamos una
+      <strong>costura</strong> (<em>seam</em>): el punto por donde puedes
+      enchufar otra cosa sin romper nada.</p>
+  </div>
+
+  <h2>La foto global: un motor, muchas puertas</h2>
+  <p class="sub">Este es el objetivo final del proyecto completo. El mismo
+    <code>Simulator</code> del centro, con tres clientes distintos.</p>
+
+  <div class="card">
+    <svg class="chart" viewBox="0 0 660 380" role="img"
+         aria-label="El motor Simulator en el centro con tres adaptadores:
+                     CLI, API REST y frontend React">
+      <style>
+        .n2 { fill: var(--card); stroke-width: 2; rx: 10; }
+        .lab { font: 600 13px system-ui; fill: var(--ink); }
+        .lab2 { font: 11px ui-monospace, monospace; fill: var(--muted); }
+        .core { font: 700 15px system-ui; fill: var(--ink); }
+        .ln { stroke: var(--muted); stroke-width: 2; fill: none; }
+        .lnd { stroke: var(--muted); stroke-width: 2; fill: none;
+               stroke-dasharray: 5 4; }
+      </style>
+      <defs>
+        <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3.2"
+                orient="auto">
+          <path d="M0,0 L8,3.2 L0,6.4 z" fill="var(--muted)"/>
+        </marker>
+      </defs>
+
+      <!-- núcleo -->
+      <rect class="n2" x="220" y="150" width="220" height="90" rx="12"
+            style="stroke:var(--good); stroke-width:3"/>
+      <text class="core" x="330" y="180" text-anchor="middle">MOTOR (núcleo)</text>
+      <text class="lab2" x="330" y="200" text-anchor="middle">domain · graph ·
+        pathfinding</text>
+      <text class="lab2" x="330" y="218" text-anchor="middle">simulation ·
+        scheduling</text>
+
+      <!-- CLI -->
+      <rect class="n2" x="30" y="30" width="180" height="62" rx="10"
+            style="stroke:var(--violet)"/>
+      <text class="lab" x="120" y="55" text-anchor="middle">CLI (obligatorio)</text>
+      <text class="lab2" x="120" y="74" text-anchor="middle">python -m flyin</text>
+      <path class="ln" marker-end="url(#a2)" d="M150,92 C170,120 200,140 224,158"/>
+
+      <!-- API -->
+      <rect class="n2" x="450" y="30" width="180" height="62" rx="10"
+            style="stroke:var(--accent)"/>
+      <text class="lab" x="540" y="55" text-anchor="middle">API REST (FastAPI)</text>
+      <text class="lab2" x="540" y="74" text-anchor="middle">POST /simulate</text>
+      <path class="lnd" marker-end="url(#a2)" d="M510,92 C490,120 460,140 436,158"/>
+
+      <!-- Tests -->
+      <rect class="n2" x="30" y="290" width="180" height="62" rx="10"
+            style="stroke:var(--warn)"/>
+      <text class="lab" x="120" y="315" text-anchor="middle">Tests (pytest)</text>
+      <text class="lab2" x="120" y="334" text-anchor="middle">sin subproceso</text>
+      <path class="ln" marker-end="url(#a2)" d="M150,290 C170,265 200,250 224,234"/>
+
+      <!-- Frontend -->
+      <rect class="n2" x="450" y="290" width="180" height="62" rx="10"
+            style="stroke:var(--teal)"/>
+      <text class="lab" x="540" y="315" text-anchor="middle">Frontend (React)</text>
+      <text class="lab2" x="540" y="334" text-anchor="middle">dibuja el JSON</text>
+      <path class="lnd" marker-end="url(#a2)" d="M540,290 L540,110"/>
+      <text class="lab2" x="552" y="205">habla solo</text>
+      <text class="lab2" x="552" y="221">con la API</text>
+
+      <text class="lab2" x="330" y="290" text-anchor="middle">línea continua =
+        ya existe · discontinua = extensión futura</text>
+    </svg>
+    <p class="note" style="margin:.6rem 0 0">Los tres clientes <strong>llaman al
+      mismo código</strong>. La API no reimplementa la simulación: la envuelve.
+      El frontend no calcula rutas: pinta lo que la API le devuelve.</p>
+  </div>
+
+  <div class="card">
+    <h3>Por qué esto se llama "puertos y adaptadores"</h3>
+    <p style="margin:.3rem 0 .5rem">Un <strong>puerto</strong> (<em>port</em>)
+      es la forma del enchufe que el núcleo ofrece: <em>"dame un
+      <code>FlyInMap</code>, te devuelvo una <code>list[str]</code>"</em>. Un
+      <strong>adaptador</strong> (<em>adapter</em>) es lo que se enchufa ahí:
+      el CLI, la API, un test.</p>
+    <p class="note" style="margin:0">Analogía: el enchufe de la pared (puerto)
+      es siempre igual; la lámpara, el cargador o la tostadora (adaptadores)
+      cambian. La pared no se entera de qué has enchufado. Por eso la decisión
+      del 2026-08-12 fue que el mapa entra como <em>fichero-argumento</em> en el
+      CLI, pero el motor recibe <em>texto/objetos</em>: cambiar la fuente no
+      toca el núcleo.</p>
+  </div>
+
+  <h2>Qué gana el proyecto con esto (y qué cuesta)</h2>
+  <div class="grid">
+    <div class="card k dom">
+      <h3>Testeable</h3>
+      <p>Puedes testear Dijkstra sin ficheros, y el <code>Cli</code> sin lanzar
+        un proceso (por eso los flujos se inyectan en el constructor).</p>
+    </div>
+    <div class="card k app">
+      <h3>Sustituible</h3>
+      <p>Cambiar Dijkstra por A* toca <em>una</em> carpeta. Añadir la API no
+        toca ninguna de las existentes.</p>
+    </div>
+    <div class="card k inf">
+      <h3>Explicable</h3>
+      <p>En la defensa puedes recorrer el camino del dato en 6 pasos y señalar
+        el fichero exacto de cada uno.</p>
+    </div>
+    <div class="card k pre">
+      <h3>El coste (sé honesto)</h3>
+      <p>Más carpetas y más indirección para un programa que "solo imprime
+        líneas". Se justifica porque el subject pide OOP y porque las
+        extensiones están decididas — no porque sí.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Riesgo de defensa que debes tener preparado</h3>
+    <p style="margin:.3rem 0 .5rem">Un evaluador puede decir:
+      <em>"¿no es sobreingeniería tener 7 carpetas?"</em>. La respuesta honesta,
+      y que además es cierta en este repo:</p>
+    <p class="quote" style="margin:0"><strong>"Ninguna carpeta nació de forma
+      especulativa: cada una nació en el slice en el que el código la
+      justificó, y está registrado en <code>docs/PROGRESS.md</code> con la
+      fecha y el motivo. <code>scheduling/</code>, <code>api/</code> y
+      <code>visualization/</code> todavía no existen precisamente por
+      eso."</strong></p>
+  </div>
+
+  <h2>Glosario</h2>
+  <div class="card overflow">
+    <table>
+      <thead><tr><th>Término</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Arquitectura</strong></td>
+          <td>Cómo se reparte el código en piezas y qué pieza puede llamar a
+            cuál.</td></tr>
+        <tr><td><strong>Capa</strong> (<em>layer</em>)</td>
+          <td>Grupo de código con una responsabilidad del mismo nivel
+            (dominio, aplicación…).</td></tr>
+        <tr><td><strong>Dominio</strong></td>
+          <td>Las entidades y reglas del problema en sí, sin tecnología
+            alrededor.</td></tr>
+        <tr><td><strong>Dependencia</strong></td>
+          <td>Que un fichero necesite (importe) a otro para funcionar.</td></tr>
+        <tr><td><strong>Acoplamiento</strong> (<em>coupling</em>)</td>
+          <td>Cuánto depende una pieza de otra. Poco acoplamiento = cambiar una
+            no rompe la otra.</td></tr>
+        <tr><td><strong>Adaptador</strong> (<em>adapter</em>)</td>
+          <td>Pieza fina que traduce entre el mundo exterior y el núcleo. El
+            <code>Cli</code> es uno.</td></tr>
+        <tr><td><strong>Puerto</strong> (<em>port</em>)</td>
+          <td>La "forma del enchufe" que el núcleo ofrece: qué recibe y qué
+            devuelve.</td></tr>
+        <tr><td><strong>Costura</strong> (<em>seam</em>)</td>
+          <td>Punto del código pensado para poder enchufar algo distinto sin
+            reescribir.</td></tr>
+        <tr><td><strong>Motor / núcleo</strong> (<em>engine, core</em>)</td>
+          <td>El código que resuelve el problema de verdad, sin saber quién lo
+            llama.</td></tr>
+        <tr><td><strong>Inyectar</strong> (<em>dependency injection</em>)</td>
+          <td>Pasarle a una clase lo que necesita (p. ej. los flujos de salida)
+            en vez de que se lo busque ella.</td></tr>
+        <tr><td><strong>stdout / stderr</strong></td>
+          <td>Los dos canales de salida de un programa: el resultado y los
+            mensajes de error, separados.</td></tr>
+        <tr><td><strong>REST / API</strong></td>
+          <td>Forma estándar de que un programa pida cosas a otro por la red,
+            normalmente con JSON.</td></tr>
+        <tr><td><strong>Backend / Frontend</strong></td>
+          <td>La parte que calcula (servidor) y la parte que se ve
+            (navegador).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <p class="big" style="margin:0 0 .4rem"><strong>Resumen en una frase para la
+      defensa:</strong></p>
+    <p class="quote" style="margin:0">"El proyecto está en capas con las
+      dependencias apuntando hacia dentro: el dominio no sabe nada de nadie, el
+      parser traduce texto a dominio, el grafo y Dijkstra calculan rutas, el
+      simulador es un motor reusable que no sabe quién lo llama, y el CLI es un
+      adaptador fino de 60 líneas. Por eso una API o una UI se añaden como
+      clientes nuevos sin tocar el motor."</p>
+  </div>
+
+  <p class="note" style="margin-top:1.6rem">¿Alguna palabra o pieza sin quedar
+    clara? Pregúntala — preguntar es el objetivo, no la molestia.</p>
+
+</main>
+</body>
+</html>
