@@ -11,3 +11,5 @@ cada pieza sin depender de prosa generada.
 | --- | --- |
 | `dijkstra-queue.html` | Traza paso a paso de la cola de prioridad en Dijkstra |
 | `complexity.html` | Big-O desde cero + la complejidad del grafo y de Dijkstra |
+| `architecture.html` | Arquitectura por capas: dominio, aplicación, adaptadores y la regla de dependencias |
+| `architecture.html` | Capas (dominio/aplicación/infra/presentación), el viaje de un mapa y la foto global CLI+API+React |
