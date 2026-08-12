@@ -14,7 +14,29 @@ _LINEAR_MAP = (
 
 
 def test_solves_map_text_into_movement_lines() -> None:
-    assert FlyinSolver().solve_text(_LINEAR_MAP) == ["D1-a", "D1-goal"]
+    result = FlyinSolver().solve_text(_LINEAR_MAP)
+
+    assert result.movement_lines == ["D1-a", "D1-goal"]
+    assert result.warnings == []
+
+
+def test_warns_and_normalizes_a_restricted_terminal() -> None:
+    text = (
+        "nb_drones: 1\n"
+        "start_hub: start 0 0 [zone=restricted]\n"
+        "hub: a 1 0\n"
+        "end_hub: goal 2 0\n"
+        "connection: start-a\n"
+        "connection: a-goal\n"
+    )
+
+    result = FlyinSolver().solve_text(text)
+
+    # The nonsensical restricted terminal is treated as normal (the map still
+    # solves) and reported as a warning naming the zone.
+    assert result.movement_lines == ["D1-a", "D1-goal"]
+    assert len(result.warnings) == 1
+    assert "start" in result.warnings[0]
 
 
 def test_propagates_parse_error() -> None:

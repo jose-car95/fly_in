@@ -53,10 +53,12 @@ class Cli:
             self._err.write(f"cannot read map {map_file!r}: {exc}\n")
             return 1
         try:
-            lines = FlyinSolver().solve_text(source_map)
+            result = FlyinSolver().solve_text(source_map)
         except (MapParseError, UnsolvableMapError) as exc:
             self._err.write(f"{exc}\n")
             return 1
-        for line in lines:
+        for warning in result.warnings:
+            self._err.write(f"{warning}\n")
+        for line in result.movement_lines:
             self._out.write(f"{line}\n")
         return 0

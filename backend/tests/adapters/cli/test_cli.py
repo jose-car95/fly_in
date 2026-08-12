@@ -66,3 +66,25 @@ def test_wrong_arguments_return_usage_error() -> None:
     assert code == 2
     assert out == ""
     assert "usage" in err
+
+
+def test_warning_goes_to_stderr_and_stdout_stays_clean(
+    tmp_path: Path
+) -> None:
+    map_file = tmp_path / "m.txt"
+    map_file.write_text(
+        "nb_drones: 1\n"
+        "start_hub: start 0 0 [zone=restricted]\n"
+        "hub: a 1 0\n"
+        "end_hub: goal 2 0\n"
+        "connection: start-a\n"
+        "connection: a-goal\n"
+    )
+
+    code, out, err = _run([str(map_file)])
+
+    # The map solves (exit 0); the warning goes to stderr, never to stdout.
+    assert code == 0
+    assert out == "D1-a\nD1-goal\n"
+    assert "warning" in err
+    assert "start" in err

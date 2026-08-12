@@ -5,39 +5,25 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + primer CLI hechos.
-- Último slice completado: M3.2 — capa de aplicación + capa de adaptadores, explícitas.
-  Nace `flyin/application/` con `FlyinSolver.solve_text(texto) -> líneas` (el caso de
-  uso: parsear + simular, agnóstico a la fuente). Nace `flyin/adapters/` (capa de
-  presentación) con `adapters/cli/`: clase `Cli(out, err).run(argv)` (adaptador FINO,
-  full-OOP) + `arguments.py` (parseo de args aislado) + `flyin/__main__.py`. El CLI NO
-  llama a `MapParser`/`Simulator`: lee el fichero → `FlyinSolver.solve_text` → imprime;
-  errores a `stderr` (exit 0/1/2). Verificado `uv run python -m flyin <mapa>`. Tests en
-  `tests/adapters/cli/` y `tests/application/`.
-- Anterior: M3.1 — `flyin/simulation/` con `Simulator`; un dron recorre su ruta →
-  `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta.
-- Último slice completado: M2.3 — desempate determinista + preferencia `priority`. La
-  clave de Dijkstra pasa de `turns` a la tupla `(turns, −nº_priority)`: a igual coste
-  gana la ruta con más zonas priority, y priority NUNCA sacrifica turnos (turns es el
-  componente primario). El nombre de zona es el desempate final estable (3er elemento
-  de la tupla del heap). `Path` sin cambios (coste = turnos). Tests: priority a coste
-  igual + guard de que no sacrifica turnos.
-- Anterior: M2.2 — `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con
-  `heapq`, borrado perezoso, `None` si inalcanzable. M2.1 — `flyin/graph/` con `Graph`.
-- Anterior: M1.9 — modelo de error único. Nace `shared/exceptions.py`
-  con `MapParseError(Exception)`; los 11 raises del parser migran a ese tipo. Un solo
-  `try/except` por línea envuelve cualquier excepción cruda (`int()`, unpack) en
-  `MapParseError` con línea física; guardianes explícitos para mapa vacío, `nb_drones`
-  no numérico y corchete sin cerrar. `MapParseError` NO hereda de `ValueError` para que
-  el envolvente no capture sus propios errores. Tests migrados a `MapParseError` + test
-  parametrizado de input malformado. Cierra el issue #13 y **todo M1**.
-- Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
-  26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
-  (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M3.3** — tránsito restricted de 2 turnos (token
+- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + CLI + capas + warnings.
+- Último slice completado: M3.3 — nace `SolveResult(movement_lines, warnings)` en la
+  capa de aplicación (2º dato → deja de ser `list[str]`). `FlyinSolver` normaliza: una
+  zona terminal con `zone=restricted` se trata como `normal` y genera un WARNING (no un
+  error; el mapa es resoluble). El CLI reparte: `movement_lines` → stdout,
+  `warnings` → stderr (stdout intacto), exit 0. `warnings` es `list[str]` (texto plano;
+  objetos con código solo si la API los pide). Tests en solver y CLI.
+- Anteriores (breve): M3.2 capa de aplicación (`FlyinSolver`) + adaptadores
+  (`adapters/cli`, clase `Cli`) · M3.1 motor `Simulator` (`D1-<zona>`,
+  `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
+  documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
+  registro de sesiones y en la tabla de decisiones.
+- Verificado con comandos: `pytest` (46 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 31 ficheros). `make lint` y
+  `make test` en verde como en la CI.
+- Siguiente paso propuesto: **M3.4** — tránsito restricted de 2 turnos (token
   `D<ID>-<conexión>` en vuelo, luego `D<ID>-<zona>` al llegar). Requiere ANTES resolver
-  la decisión abierta #14 (texto exacto del token de conexión) con `/decide`. Luego:
-  máquina de estados de turnos, validador independiente, y multi-dron (gran parte M4).
+  la decisión abierta #14 (texto del token de conexión) con `/decide`. Luego: máquina de
+  estados de turnos, validador independiente, y multi-dron (gran parte M4).
 
 ## Decisiones tomadas
 
@@ -143,3 +129,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-11 | Cierre M2 (épica #16): documentada la complejidad — O(V+E) grafo, O((V+E)·log V) Dijkstra — en docstrings y en `docs/explication/complexity.html` (Big-O desde cero). Cierra la épica | 35 passed, lint/type en verde |
 | 2026-08-11 | Slice M3.1 (épica #17): nace `flyin/simulation/` con `Simulator`; un dron recorre su ruta → líneas exactas `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta; `tests/simulation/` nuevo | pytest 37 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.2 (épica #17): capa de aplicación `FlyinSolver.solve_text` + capa `flyin/adapters/` con `adapters/cli` (clase `Cli.run`) + `arguments.py` + `__main__.py`; el CLI no llama al parser, solo al solver; `tests/adapters/cli/` y `tests/application/` | pytest 44 passed, lint/type en verde |
+| 2026-08-12 | Slice M3.3 (épica #17): nace `SolveResult(movement_lines, warnings)`; `FlyinSolver` normaliza terminal `restricted`→`normal` con warning; el CLI reparte lines→stdout, warnings→stderr (exit 0); tests en solver y CLI | pytest 46 passed, lint/type en verde |
