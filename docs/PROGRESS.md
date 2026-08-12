@@ -6,24 +6,25 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + CLI + capas + warnings.
-- Último slice completado: M3.3 — nace `SolveResult(movement_lines, warnings)` en la
-  capa de aplicación (2º dato → deja de ser `list[str]`). `FlyinSolver` normaliza: una
-  zona terminal con `zone=restricted` se trata como `normal` y genera un WARNING (no un
-  error; el mapa es resoluble). El CLI reparte: `movement_lines` → stdout,
-  `warnings` → stderr (stdout intacto), exit 0. `warnings` es `list[str]` (texto plano;
-  objetos con código solo si la API los pide). Tests en solver y CLI.
-- Anteriores (breve): M3.2 capa de aplicación (`FlyinSolver`) + adaptadores
-  (`adapters/cli`, clase `Cli`) · M3.1 motor `Simulator` (`D1-<zona>`,
+- Último slice completado: M3.4 — tránsito restricted de 2 turnos en el `Simulator`.
+  `run()` recorre el camino por pares `origen→destino` (`zip(zones, zones[1:])`): si el
+  destino es `RESTRICTED` emite el token en vuelo `D1-<origen>-<destino>` (decisión #14)
+  y luego el de llegada `D1-<destino>`; normal/priority = un solo `D1-<destino>`. Como
+  M3.3 normaliza terminales, una restricted en el camino es siempre un hub intermedio.
+  Test `test_restricted_zone_takes_two_turns`.
+- Anteriores (breve): M3.3 `SolveResult(movement_lines, warnings)` + normalización de
+  terminal `restricted`→`normal` con warning · M3.2 capa de aplicación (`FlyinSolver`) +
+  adaptadores (`adapters/cli`, clase `Cli`) · M3.1 motor `Simulator` (`D1-<zona>`,
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (46 passed), `flake8 .` (limpio, límite 79),
+- Verificado con comandos: `pytest` (47 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 31 ficheros). `make lint` y
   `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M3.4** — tránsito restricted de 2 turnos (token
-  `D<ID>-<conexión>` en vuelo, luego `D<ID>-<zona>` al llegar). Requiere ANTES resolver
-  la decisión abierta #14 (texto del token de conexión) con `/decide`. Luego: máquina de
-  estados de turnos, validador independiente, y multi-dron (gran parte M4).
+- Siguiente paso propuesto: cerrar M3 — máquina de estados de turnos explícita
+  (`SimulationState → TurnPlan → SimulationState`) y validador de schedules
+  independiente. Luego M4 (multi-dron: colas, capacidad de zona/enlace, reserva futura
+  de la llegada restricted — decisión abierta #15: ventana de capacidad del enlace).
 
 ## Decisiones tomadas
 
@@ -52,6 +53,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-12 | M3.2: el mapa entra como fichero-argumento; el núcleo es agnóstico a la fuente | El subject no fija stdin vs argumento; argumento es explícito, da mejores errores y encaja con un futuro menú de mapas. El motor recibe texto/objetos, así que futuras fuentes (stdin, menú, API, HTML) son adaptadores nuevos sin tocar el núcleo (puertos y adaptadores) |
 | 2026-08-12 | Introducir la capa de aplicación (`FlyinSolver`) YA, con un solo llamador (el CLI), en vez de esperar al 2º adaptador | Decisión de Jose: inversión de aprendizaje para entender las capas y dejar la costura lista para la API (consumidor futuro decidido). Se asume el "coste YAGNI" (abstracción con un cliente) a cambio de la claridad arquitectónica; la implementación se mantiene mínima (adaptador fino + orquestador fino) |
 | 2026-08-12 | Capa `adapters/` (con `cli/` dentro) y el CLI como CLASE, no función | La familia de adaptadores (cli, api, frontend) está decidida → agrupar bajo `adapters/` hace visible la capa de presentación sin ser especulativo. El CLI vuelve a clase para respetar el contrato full-OOP (defendible en 42) |
+| 2026-08-12 | #14: el token de conexión en vuelo usa `origen-destino` → `D<ID>-<origen>-<destino>` | Refleja la dirección del viaje (de dónde viene, a dónde va), es determinista y es la propuesta por defecto de SPEC_NOTES. El subject no fija la forma; origen-destino es la más informativa |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -74,9 +76,8 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 
 ## Preguntas abiertas
 
-- Token textual exacto de la conexión en vuelo (`<origen>-<destino>`?). Fijar antes de M3.
 - Ventana exacta de consumo de capacidad del enlace durante el tránsito restricted
-  (¿un turno o los dos?). Fijar con tests en M3/M4.
+  (¿un turno o los dos?). Fijar con tests en M3/M4 (decisión abierta #15).
 
 ## GitHub: qué se mueve solo y qué muevo a mano
 
@@ -130,3 +131,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-11 | Slice M3.1 (épica #17): nace `flyin/simulation/` con `Simulator`; un dron recorre su ruta → líneas exactas `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta; `tests/simulation/` nuevo | pytest 37 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.2 (épica #17): capa de aplicación `FlyinSolver.solve_text` + capa `flyin/adapters/` con `adapters/cli` (clase `Cli.run`) + `arguments.py` + `__main__.py`; el CLI no llama al parser, solo al solver; `tests/adapters/cli/` y `tests/application/` | pytest 44 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.3 (épica #17): nace `SolveResult(movement_lines, warnings)`; `FlyinSolver` normaliza terminal `restricted`→`normal` con warning; el CLI reparte lines→stdout, warnings→stderr (exit 0); tests en solver y CLI | pytest 46 passed, lint/type en verde |
+| 2026-08-12 | Slice M3.4 (épica #17): tránsito restricted de 2 turnos en `Simulator.run()` (bucle por pares, token en vuelo `D1-<origen>-<destino>` + llegada); decisión #14 registrada (SPEC_NOTES §1 + tabla); test `test_restricted_zone_takes_two_turns`. Cierra #14 | pytest 47 passed, lint/type en verde |
