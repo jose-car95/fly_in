@@ -17,8 +17,11 @@ Toda ambigüedad nueva se registra aquí o en `PROGRESS.md` antes de implementar
   El planificador reserva a futuro; el simulador lo verifica.
 - FACT (salida): turno 1 imprime `D<ID>-<conexión>` (en vuelo); turno 2 imprime
   `D<ID>-<zona>` (llegada).
-- ABIERTO: nombre textual exacto del token de conexión. Propuesta por defecto:
-  `<origen>-<destino>`. Verificar contra lo que espera el evaluador antes de M3.
+- DECISIÓN (2026-08-12, #14): el token de conexión en vuelo se escribe
+  `<origen>-<destino>` (la dirección del viaje) → `D<ID>-<origen>-<destino>`. El
+  subject no fija la forma (zona gris); origen-destino es determinista e informa de
+  hacia dónde va el dron. Lleva dos guiones (p. ej. `D1-A-B`), coherente con el
+  guion de la sintaxis de conexión del mapa.
 - ABIERTO: ventana exacta en que el tránsito consume capacidad del enlace (¿solo el
   turno de salida o ambos turnos?). Fijar con tests en M3/M4 antes de optimizar.
 
