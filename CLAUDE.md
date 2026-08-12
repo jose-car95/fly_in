@@ -1,8 +1,8 @@
-# Fly-In 1.5 — contrato de trabajo con Claude Code
+# Fly-In 1.6 — contrato de trabajo con Claude Code
 
 ## Misión
 
-Implementar Fly-In 1.5 de forma incremental, correcta y defendible. Jose debe entender y
+Implementar Fly-In 1.6 de forma incremental, correcta y defendible. Jose debe entender y
 poder explicar cada línea importante en la defensa (peer review de 42). Primero el proyecto
 obligatorio (CLI en Python); las extensiones (API, UI) solo después y solo si se deciden.
 
@@ -58,9 +58,11 @@ no solo a las de conceptos grandes:
 
 ## Fuentes
 
-Única fuente de verdad: el enunciado Fly-In **v1.5** y la hoja de corrección de Intra
-(ambos en los ficheros del Proyecto de Claude). Los mapas en `maps/` son los adjuntos
-oficiales v1.5: no editarlos nunca. `maps/README.md` es orientativo, no normativo.
+Única fuente de verdad: el enunciado Fly-In **v1.6** (`docs/en.subject_1.6.pdf`) y la
+hoja de corrección de Intra. El único cambio v1.5→v1.6 es un requisito nuevo del README
+(incluir un ejemplo de entrada y su salida esperada); no cambia el comportamiento ni los
+mapas. Los mapas en `maps/` son los adjuntos oficiales (sin cambios en v1.6): no editarlos
+nunca. `maps/README.md` es orientativo, no normativo.
 Fixtures propias van en `tests/fixtures/` con un comentario inicial que explique su
 propósito. Las zonas grises del subject y su interpretación están en `docs/SPEC_NOTES.md`.
 

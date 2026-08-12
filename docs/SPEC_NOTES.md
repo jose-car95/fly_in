@@ -1,6 +1,6 @@
-# Fly-In 1.5 — zonas grises del subject (red de seguridad para la defensa)
+# Fly-In 1.6 — zonas grises del subject (red de seguridad para la defensa)
 
-Única fuente de verdad: el enunciado **v1.5** y la hoja de corrección de Intra.
+Única fuente de verdad: el enunciado **v1.6** y la hoja de corrección de Intra.
 Este documento fija cómo interpretamos lo que el subject deja ambiguo. Etiquetas:
 **FACT** (lo dice el subject), **INTERPRETACIÓN** (lectura razonada de un hueco),
 **DECISIÓN** (elección de ingeniería que hay que poder justificar en la defensa).

@@ -82,7 +82,8 @@ Salida: tabla documentada con resultados frescos y explicación de los gaps rest
 
 - Modo visual de terminal coloreado usando los colores del mapa, sin tocar el stdout
   por defecto.
-- README con todas las secciones obligatorias y ejemplos.
+- README con todas las secciones obligatorias, incluido un **ejemplo de entrada y su
+  salida esperada** (requisito nuevo de v1.6) que demuestre la funcionalidad.
 - `docs/EVALUATION.md` con evidencia por ítem de rúbrica.
 - Ensayar el live coding `--capacity-info` (≤10 min) desde una rama limpia.
 - Casos límite, mapas inválidos, muchos drones, ejecución desde clon limpio.
