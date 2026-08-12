@@ -11,3 +11,12 @@ class MapParseError(Exception):
     so the parser can wrap the raw ``ValueError``/``IndexError`` of malformed
     input without catching its own errors by accident.
     """
+
+
+class UnsolvableMapError(Exception):
+    """Raised when the start hub cannot reach the end hub.
+
+    The map is well-formed (it parsed), but no route exists, so simulating it
+    would never finish. Distinct from :class:`MapParseError`, which is about
+    malformed input rather than an unreachable goal.
+    """

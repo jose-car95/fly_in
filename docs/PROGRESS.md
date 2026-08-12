@@ -5,8 +5,13 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M2 COMPLETO** (M0 y M1 cerrados). Grafo + Dijkstra + desempate priority
-  + complejidad documentada. Siguiente: M3 (motor de simulación determinista + CLI).
+- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Nace el motor de simulación.
+- Último slice completado: M3.1 — nace `flyin/simulation/` con `Simulator`. Con
+  `nb_drones=1`, un dron (`D1`) recorre su ruta de Dijkstra un paso por turno y el motor
+  devuelve las líneas exactas (`["D1-a", "D1-b", "D1-goal"]`). Si `start` no alcanza
+  `end` → `UnsolvableMapError` (tipo nuevo en `shared/exceptions.py`, mapa bien formado
+  sin ruta; nunca simulación infinita). Aún sin bucle de turnos con estado, multi-dron,
+  tránsito restricted ni CLI. Tests en `tests/simulation/`.
 - Último slice completado: M2.3 — desempate determinista + preferencia `priority`. La
   clave de Dijkstra pasa de `turns` a la tupla `(turns, −nº_priority)`: a igual coste
   gana la ruta con más zonas priority, y priority NUNCA sacrifica turnos (turns es el
@@ -25,9 +30,9 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 - Verificado con comandos: `pytest` (33 passed: 2 dominio + 2 grafo + 3 pathfinding +
   26 parser), `flake8 .` (limpio, límite 79), `mypy .` con los flags de `make lint`
   (sin errores, 18 ficheros). `make lint` y `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M3** — motor de simulación determinista reusable
-  `simulate(map, settings)` + el primer CLI (salida exacta por turnos). Nace `simulation`
-  y `cli`; es donde el pathfinding se pone al servicio de mover drones de verdad.
+- Siguiente paso propuesto: **M3.2** — el primer CLI (leer fichero de mapa → simular →
+  imprimir la salida exacta por stdout, incl. el error claro si el mapa no es resoluble).
+  Nace `flyin/cli`. Luego: tránsito restricted de 2 turnos y multi-dron (gran parte M4).
 
 ## Decisiones tomadas
 
@@ -65,7 +70,8 @@ frontera raíz (`backend/`↔`frontend/`) ya existe; las internas siguen este ma
 | M1.9 (hecho) | `shared/exceptions.py` | Nació con `MapParseError`: los errores de parseo se repetían y pedían un tipo común |
 | M2.1 (hecho) | `graph` | La adyacencia transitable propia, sin librerías |
 | M2.2 (hecho) | `pathfinding` | Dijkstra sobre el grafo (camino de menor coste + resoluble) |
-| M3 | `simulation` (motor `simulate()`) + `cli` | La costura reusable + su primer cliente |
+| M3.1 (hecho) | `simulation` (motor `Simulator`) | La costura reusable de simulación |
+| M3.2 | `cli` | Primer cliente del motor: lee el mapa e imprime la salida |
 | M4 | `scheduling` | Reservas de capacidad/tiempo |
 | M5 | `benchmark` | Comparar algoritmos / métricas |
 | Post-mandatory | `api` (FastAPI) | 2º cliente del motor: frontera REST |
@@ -127,3 +133,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-11 | Slice M2.2 (épica #16): nace `flyin/pathfinding/` con `Dijkstra`+`Path`; camino de menor coste con `heapq`, borrado perezoso, `None` si inalcanzable; `tests/pathfinding/` nuevo | pytest 33 passed, lint/type en verde |
 | 2026-08-11 | Slice M2.3 (épica #16): clave de Dijkstra `(turnos, −nº_priority)` → preferencia priority a coste igual sin sacrificar turnos, desempate final por nombre; 2 tests nuevos | pytest 35 passed, lint/type en verde |
 | 2026-08-11 | Cierre M2 (épica #16): documentada la complejidad — O(V+E) grafo, O((V+E)·log V) Dijkstra — en docstrings y en `docs/explication/complexity.html` (Big-O desde cero). Cierra la épica | 35 passed, lint/type en verde |
+| 2026-08-11 | Slice M3.1 (épica #17): nace `flyin/simulation/` con `Simulator`; un dron recorre su ruta → líneas exactas `D1-<zona>`; `UnsolvableMapError` para mapa sin ruta; `tests/simulation/` nuevo | pytest 37 passed, lint/type en verde |
