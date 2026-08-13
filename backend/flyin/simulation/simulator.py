@@ -1,10 +1,25 @@
 """Turn-based simulation of drones over a parsed map."""
 
+from enum import Enum, auto
+
 from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import ZoneType
 from flyin.graph.graph import Graph
 from flyin.pathfinding.dijkstra import Dijkstra
 from flyin.shared.exceptions import UnsolvableMapError
+
+
+class DroneState(Enum):
+    """Lifecycle of a single drone as it walks its route.
+
+    A drone is ``AT_ZONE`` when it stands on a zone ready to move,
+    ``IN_TRANSIT`` while it occupies a connection toward a restricted zone
+    it must land on next turn, and ``DELIVERED`` once it reaches the end.
+    """
+
+    AT_ZONE = auto()
+    IN_TRANSIT = auto()
+    DELIVERED = auto()
 
 
 class Simulator:
@@ -46,12 +61,27 @@ class Simulator:
                 f"no route from {self._map.start.name!r} to "
                 f"{self._map.end.name!r}"
             )
+        zones = path.zones
+        last = len(zones) - 1
+        index = 0
+        state = DroneState.DELIVERED if last == 0 else DroneState.AT_ZONE
         lines: list[str] = []
-        # The drone stands on the first zone; each following zone is one hop.
-        for origin, target in zip(path.zones, path.zones[1:]):
-            if self._map.zones[target].zone_type is ZoneType.RESTRICTED:
-                # A restricted target takes 2 turns: the drone is first in
-                # flight on the connection, then lands the next turn.
-                lines.append(f"D1-{origin}-{target}")
-            lines.append(f"D1-{target}")
+        # One loop turn = one output line. The drone's state drives the
+        # transition: a restricted target splits into a take-off turn
+        # (IN_TRANSIT) and a landing turn; any other move is a single turn.
+        while state is not DroneState.DELIVERED:
+            target = zones[index + 1]
+            restricted = (
+                self._map.zones[target].zone_type is ZoneType.RESTRICTED
+            )
+            if state is DroneState.AT_ZONE and restricted:
+                lines.append(f"D1-{zones[index]}-{target}")
+                state = DroneState.IN_TRANSIT
+            else:
+                lines.append(f"D1-{target}")
+                index += 1
+                state = (
+                    DroneState.DELIVERED if index == last
+                    else DroneState.AT_ZONE
+                )
         return lines

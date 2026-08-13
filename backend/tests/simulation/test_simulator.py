@@ -4,6 +4,7 @@ from flyin.domain.connection import Connection
 from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import Zone, ZoneType
 from flyin.shared.exceptions import UnsolvableMapError
+from flyin.simulation.schedule_validator import ScheduleValidator
 from flyin.simulation.simulator import Simulator
 
 
@@ -57,6 +58,27 @@ def test_restricted_zone_takes_two_turns() -> None:
     # Entering 'r' costs 2 turns: turn 1 the drone is in flight on the
     # 'a-r' connection, turn 2 it lands on 'r'. Normal zones stay 1 turn.
     assert lines == ["D1-a", "D1-a-r", "D1-r", "D1-goal"]
+
+
+def test_engine_output_passes_the_independent_validator() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "a": Zone("a", 1, 0),
+        "r": Zone("r", 2, 0, zone_type=ZoneType.RESTRICTED),
+        "goal": Zone("goal", 3, 0, is_end=True)
+    }
+    connections = [
+        Connection("start", "a"),
+        Connection("a", "r"),
+        Connection("r", "goal")
+    ]
+    fly_in_map = _map(zones, connections)
+
+    lines = Simulator(fly_in_map).run()
+
+    # The independent judge must accept the engine's own output: the two
+    # M3 pieces check each other instead of trusting the planner.
+    ScheduleValidator(fly_in_map, lines).validate()
 
 
 def test_unsolvable_map_raises() -> None:
