@@ -20,3 +20,14 @@ class UnsolvableMapError(Exception):
     would never finish. Distinct from :class:`MapParseError`, which is about
     malformed input rather than an unreachable goal.
     """
+
+
+class InvalidScheduleError(Exception):
+    """Raised when a produced schedule breaks a movement rule.
+
+    The independent ``ScheduleValidator`` raises this on the first illegal
+    move (a hop with no connection, a wrong restricted-transit shape, or a
+    drone that never reaches the end). It judges an already-produced
+    schedule, so a planner bug that yields an illegal output is caught here
+    rather than trusted.
+    """

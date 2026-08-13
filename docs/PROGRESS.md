@@ -6,25 +6,29 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + CLI + capas + warnings.
-- Último slice completado: M3.4 — tránsito restricted de 2 turnos en el `Simulator`.
-  `run()` recorre el camino por pares `origen→destino` (`zip(zones, zones[1:])`): si el
-  destino es `RESTRICTED` emite el token en vuelo `D1-<origen>-<destino>` (decisión #14)
-  y luego el de llegada `D1-<destino>`; normal/priority = un solo `D1-<destino>`. Como
-  M3.3 normaliza terminales, una restricted en el camino es siempre un hub intermedio.
-  Test `test_restricted_zone_takes_two_turns`.
-- Anteriores (breve): M3.3 `SolveResult(movement_lines, warnings)` + normalización de
-  terminal `restricted`→`normal` con warning · M3.2 capa de aplicación (`FlyinSolver`) +
+- Último slice completado: M3.5 — validador de schedules independiente. Nace
+  `ScheduleValidator(map, movement_lines).validate()` en `flyin/simulation/`: reproduce
+  el recorrido del dron (estado `position` + `in_flight_to`) y lanza `InvalidScheduleError`
+  ante el primer movimiento ilegal (salto sin conexión, forma de tránsito restricted mala,
+  o dron que no llega a `end`). Construye su PROPIA adyacencia (no reutiliza `Graph`) para
+  ser independiente del planificador. `move_cost != 1` rechaza restricted y blocked de un
+  tiro. Un dron (multi-dron/capacidades = M4). 5 tests nuevos.
+- Anteriores (breve): M3.4 tránsito restricted de 2 turnos en `Simulator.run()` (token en
+  vuelo `D1-<origen>-<destino>` + llegada) · M3.3 `SolveResult(movement_lines, warnings)` +
+  normalización de terminal `restricted`→`normal` con warning · M3.2 capa de aplicación
+  (`FlyinSolver`) +
   adaptadores (`adapters/cli`, clase `Cli`) · M3.1 motor `Simulator` (`D1-<zona>`,
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (47 passed), `flake8 .` (limpio, límite 79),
-  `mypy .` con los flags de `make lint` (sin errores, 31 ficheros). `make lint` y
+- Verificado con comandos: `pytest` (52 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 33 ficheros). `make lint` y
   `make test` en verde como en la CI.
 - Siguiente paso propuesto: cerrar M3 — máquina de estados de turnos explícita
-  (`SimulationState → TurnPlan → SimulationState`) y validador de schedules
-  independiente. Luego M4 (multi-dron: colas, capacidad de zona/enlace, reserva futura
-  de la llegada restricted — decisión abierta #15: ventana de capacidad del enlace).
+  (`SimulationState → TurnPlan → SimulationState`), que refactoriza `Simulator.run()` a
+  transiciones atómicas y deja el terreno listo para el multi-dron. Luego M4 (multi-dron:
+  colas, capacidad de zona/enlace, reserva futura de la llegada restricted — decisión
+  abierta #15: ventana de capacidad del enlace).
 
 ## Decisiones tomadas
 
@@ -132,3 +136,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-12 | Slice M3.2 (épica #17): capa de aplicación `FlyinSolver.solve_text` + capa `flyin/adapters/` con `adapters/cli` (clase `Cli.run`) + `arguments.py` + `__main__.py`; el CLI no llama al parser, solo al solver; `tests/adapters/cli/` y `tests/application/` | pytest 44 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.3 (épica #17): nace `SolveResult(movement_lines, warnings)`; `FlyinSolver` normaliza terminal `restricted`→`normal` con warning; el CLI reparte lines→stdout, warnings→stderr (exit 0); tests en solver y CLI | pytest 46 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.4 (épica #17): tránsito restricted de 2 turnos en `Simulator.run()` (bucle por pares, token en vuelo `D1-<origen>-<destino>` + llegada); decisión #14 registrada (SPEC_NOTES §1 + tabla); test `test_restricted_zone_takes_two_turns`. Cierra #14 | pytest 47 passed, lint/type en verde |
+| 2026-08-12 | Slice M3.5 (épica #17): nace `ScheduleValidator` (validador independiente) + `InvalidScheduleError`; reproduce el recorrido de un dron (`position`+`in_flight_to`) y rechaza salto sin conexión, forma restricted mala o no-llegada a `end`; adyacencia propia (no reutiliza `Graph`); 5 tests nuevos | pytest 52 passed, lint/type en verde |
