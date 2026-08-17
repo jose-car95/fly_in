@@ -79,6 +79,21 @@ def test_two_drones_queue_on_a_capacity_one_zone() -> None:
     assert lines == ["D1-a", "D1-goal D2-a", "D2-goal"]
 
 
+def test_zone_capacity_above_one_admits_several_drones() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "a": Zone("a", 1, 0, max_drones=2),
+        "goal": Zone("goal", 2, 0, is_end=True)
+    }
+    connections = [Connection("start", "a"), Connection("a", "goal")]
+
+    lines = Simulator(_map(zones, connections, nb_drones=3)).run()
+
+    # 'a' holds two drones at once, so D1 and D2 enter together while D3
+    # waits; next turn both leave for 'goal', freeing 'a', and D3 enters.
+    assert lines == ["D1-a D2-a", "D1-goal D2-goal D3-a", "D3-goal"]
+
+
 def test_engine_output_passes_the_independent_validator() -> None:
     zones = {
         "start": Zone("start", 0, 0, is_start=True),
