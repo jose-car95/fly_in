@@ -52,21 +52,29 @@ Salida: schedules conocidos validan y los tests de stdout exacto pasan.
 
 ## M4 — Scheduler consciente de capacidad
 
-1. Cola en zonas de capacidad 1 (defecto).
-2. Liberación por salida en el mismo turno.
-3. `max_drones > 1`.
-4. Capacidad de enlace por defecto; luego `max_link_capacity > 1`.
-5. Reserva futura para llegadas restricted.
-6. Múltiples caminos candidatos; reparto de rutas y espera estratégica.
-7. Prevención/detección de deadlocks.
+1. Cola en zonas de capacidad 1 (defecto). [hecho, M4.1]
+2. Liberación por salida en el mismo turno. [hecho, M4.1/M4.3]
+3. `max_drones > 1`. [hecho, M4.3]
+4. Capacidad de enlace por defecto; luego `max_link_capacity > 1`. [hecho, M4.4]
+5. Reserva futura para llegadas restricted. [hecho, M4.5]
+6. Cerrar M4 con VALIDEZ demostrada: validador independiente multi-dron (zona +
+   enlace) pasado sobre los 10 mapas oficiales. [en curso, Path A]
+
+Nota (Path A, 2026-08-17): el motor de un solo camino ya da schedules válidos y
+terminantes en todos los mapas (el listón obligatorio de M4). Multi-camino y
+detección de deadlock son optimización/robustez → movidos a M5, porque el
+subject pide medir antes de optimizar. M4 se cierra probando la validez.
 
 Salida: todos los mapas provistos obtienen schedules válidos y terminantes
-(independientemente de los objetivos de turnos).
+(independientemente de los objetivos de turnos), y el validador independiente lo
+confirma.
 
 ## M5 — Optimización con benchmarks
 
 Primero línea base medida; optimizar solo a partir de mediciones.
 
+- Múltiples caminos candidatos; reparto de rutas y espera estratégica (movido de M4).
+- Prevención/detección de deadlocks (movido de M4; solo relevante con multi-camino).
 - Coste de caminos candidatos + capacidad de cuello de botella.
 - Estimar tiempo de finalización de la flota, no solo el camino más corto por dron.
 - Repartir drones entre caminos beneficiosos; caching solo si el profiling muestra
