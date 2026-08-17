@@ -9,11 +9,13 @@ from flyin.simulation.simulator import Simulator
 
 
 def _map(
-    zones: dict[str, Zone], connections: list[Connection]
+    zones: dict[str, Zone],
+    connections: list[Connection],
+    nb_drones: int = 1
 ) -> FlyInMap:
-    """Build a one-drone map from zones and connections for a sim test."""
+    """Build a map from zones and connections for a sim test."""
     return FlyInMap(
-        nb_drones=1,
+        nb_drones=nb_drones,
         zones=zones,
         connections=connections,
         start=zones["start"],
@@ -58,6 +60,23 @@ def test_restricted_zone_takes_two_turns() -> None:
     # Entering 'r' costs 2 turns: turn 1 the drone is in flight on the
     # 'a-r' connection, turn 2 it lands on 'r'. Normal zones stay 1 turn.
     assert lines == ["D1-a", "D1-a-r", "D1-r", "D1-goal"]
+
+
+def test_two_drones_queue_on_a_capacity_one_zone() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "a": Zone("a", 1, 0),
+        "goal": Zone("goal", 2, 0, is_end=True)
+    }
+    connections = [Connection("start", "a"), Connection("a", "goal")]
+
+    lines = Simulator(_map(zones, connections, nb_drones=2)).run()
+
+    # 'a' holds one drone at a time, so the drones pipeline through it. D1
+    # enters 'a' alone (D2 waits at start, omitted); next turn D1 leaves for
+    # 'goal', freeing 'a' the same turn, and D2 takes 'a'; then D2 reaches
+    # 'goal'. Tokens on a line are ordered by ascending drone id.
+    assert lines == ["D1-a", "D1-goal D2-a", "D2-goal"]
 
 
 def test_engine_output_passes_the_independent_validator() -> None:
