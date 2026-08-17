@@ -6,19 +6,19 @@ Solo marcar `EVIDENCED` con un test, comando, fichero o demo concreta.
 | Ítem de rúbrica | Comportamiento / evidencia requerida | Evidencia planeada | Estado |
 | --- | --- | --- | --- |
 | README | Primera línea 42, Description, Instructions, Resources/uso de IA, algoritmo, visual, ejemplo | Revisión del README raíz | NOT_STARTED |
-| OOP | Separación/encapsulación; herencia solo justificada | Diseño de paquetes + explicación | NOT_STARTED |
-| Type safety | `mypy .` sin errores, hints completos | Log del comando | NOT_STARTED |
-| Grafo propio | Sin librería prohibida; saber explicarlo | Auditoría de deps + tests de grafo | NOT_STARTED |
-| Parser válido | nb_drones, prefijos, conexiones, defaults, comentarios (≥4/5) | Tests de contrato del parser | NOT_STARTED |
-| Parser errores | Malformado, tipos inválidos, terminales ausentes, capacidades, duplicados (≥4/5) | Matriz de errores en tests | NOT_STARTED |
-| Ocupación de zonas | Capacidad defecto/explícita, terminales ilimitados, liberación mismo turno | Tests de validador/simulador | NOT_STARTED |
-| Costes de movimiento | normal/priority 1, restricted 2, blocked inaccesible | Tests de transición de estado | NOT_STARTED |
-| Capacidad de enlace | Defecto/explícita, simultaneidad | Tests de reservas | NOT_STARTED |
+| OOP | Separación/encapsulación; herencia solo justificada | Diseño de paquetes + explicación | IN_PROGRESS |
+| Type safety | `mypy .` sin errores, hints completos | `make lint` (mypy, 36 ficheros sin errores) | EVIDENCED |
+| Grafo propio | Sin librería prohibida; saber explicarlo | `tests/graph`, `tests/pathfinding`; sin networkx/graphlib | EVIDENCED |
+| Parser válido | nb_drones, prefijos, conexiones, defaults, comentarios (≥4/5) | `tests/parsing/test_map_parser.py` (26 tests) | EVIDENCED |
+| Parser errores | Malformado, tipos inválidos, terminales ausentes, capacidades, duplicados (≥4/5) | Matriz de malformados en `tests/parsing` | EVIDENCED |
+| Ocupación de zonas | Capacidad defecto/explícita, terminales ilimitados, liberación mismo turno | `test_simulator` (cola, cap>1) + `test_schedule_validator` (ocupación) + `test_official_maps` | EVIDENCED |
+| Costes de movimiento | normal/priority 1, restricted 2, blocked inaccesible | `test_zone` (move_cost) + `test_simulator` (restricted 2 turnos) | EVIDENCED |
+| Capacidad de enlace | Defecto/explícita, simultaneidad | `test_simulator` (throttle) + `test_schedule_validator` (cruces) | EVIDENCED |
 | Visualización | Posiciones/movimientos/colores/capacidad claros | Demo de terminal | NOT_STARTED |
-| Escenarios básicos | 1 dron, varios drones, mapas provistos, formato, omisión de parados (≥4/5) | Tests de integración CLI | NOT_STARTED |
-| Terminación | Parar exactamente al entregar todos | Test CLI/simulador | NOT_STARTED |
-| Caminos válidos | Lineal, múltiple, cuellos de botella, tipos | Tests planner + validador | NOT_STARTED |
-| Conflictos | Competición, simultaneidad, restricted multi-turno | Tests de scheduler | NOT_STARTED |
+| Escenarios básicos | 1 dron, varios drones, mapas provistos, formato, omisión de parados (≥4/5) | `test_official_maps` (10 mapas) + `tests/adapters/cli` + cola | EVIDENCED |
+| Terminación | Parar exactamente al entregar todos | `test_official_maps` (terminan) + `test_simulator` | EVIDENCED |
+| Caminos válidos | Lineal, múltiple, cuellos de botella, tipos | `test_official_maps` (validador acepta los 10) | EVIDENCED |
+| Conflictos | Competición, simultaneidad, restricted multi-turno | `test_simulator` (cola, serialize restricted) + validador | EVIDENCED |
 | Eficiencia | 10+ drones, grafos complejos, tiempo razonable | Informe de benchmarks | NOT_STARTED |
 | Explicación | Complejidad, diseño, trade-offs de capacidad/optimización | README + notas de defensa | NOT_STARTED |
 | Benchmarks Easy | Categoría <10; objetivos 6/8/6 con 2/4/4 drones | Tabla fresca | NOT_STARTED |
