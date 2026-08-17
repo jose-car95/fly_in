@@ -11,13 +11,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   oficiales de forma válida y terminante (listón obligatorio de M4 cumplido). Multi-camino
   y detección de deadlock son OPTIMIZACIÓN → se mueven a M5 (el subject pide medir antes de
   optimizar). M4 se cierra probando la validez con el juez independiente. Ver decisión.
-- Último slice completado: M4.6 (Path A) — validador multi-dron. `ScheduleValidator` deja de
-  ser de 1 dron y reproduce el schedule siguiendo a cada dron por id (`_position`/`_in_flight`
-  dicts). Comprueba: ocupación de zona por turno ≤ capacidad, un solo movimiento por dron y
-  turno, aterrizaje obligatorio (dron en vuelo debe aterrizar al turno siguiente), y que
-  todos empiecen en start y acaben en end. `_capacity`/`_links` propios (independiente del
-  motor a propósito). Capacidad de ENLACE aún no (slice siguiente). 3 tests nuevos.
-- Anteriores (breve): M4.5 reserva de llegadas restricted (dron en vuelo cuenta contra su
+- Último slice completado: Path A slice 2 — capacidad de enlace en el validador. Ahora
+  `ScheduleValidator` cuenta los cruces de cada conexión por turno y rechaza si superan
+  `max_link_capacity` (`_link_caps` dict, defecto 1). Respeta la decisión #15: un aterrizaje
+  restricted NO cuenta como cruce (ya se midió al despegar). Con esto el juez está COMPLETO
+  (zona + enlace), independiente del motor. 2 tests nuevos (rechaza sobre-cruce / acepta
+  cruce paralelo legal). Falta el paso de cierre: pasarlo por los 10 mapas oficiales.
+- Anteriores (breve): M4.6 validador multi-dron (replay por id, ocupación de zona, aterrizaje
+  obligatorio, start→end) · M4.5 reserva de llegadas restricted (dron en vuelo cuenta contra su
   destino; despegue unificado con movimiento normal; decisión #15 Opción A) · M4.4 capacidad
   de enlace (`_link_slots`, clave `frozenset`, defecto 1)
   · M4.3 test de caracterización de `max_drones > 1` · M4.1 multi-dron con
@@ -33,14 +34,13 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (60 passed), `flake8 .` (limpio, límite 79),
+- Verificado con comandos: `pytest` (62 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 35 ficheros). `make lint` y
   `make test` en verde como en la CI.
-- Siguiente paso propuesto (Path A): añadir al validador el invariante de **capacidad de
-  enlace** (ninguna conexión cruzada más veces de las permitidas por turno), y luego un test
-  que pase el validador ya completo sobre la salida del motor en los 10 mapas oficiales →
-  cierra M4 con validez DEMOSTRADA por el juez independiente. Después M5 (benchmarks +
-  multi-camino guiado por medidas).
+- Siguiente paso propuesto (Path A, cierre de M4): un test que, para cada uno de los 10
+  mapas oficiales, corra el motor y pase su salida por el validador ya completo → validez
+  DEMOSTRADA por el juez independiente. Puede destapar bugs del motor (sería un hallazgo
+  valioso). Después M5 (benchmarks + multi-camino guiado por medidas).
 
 ## Decisiones tomadas
 
@@ -166,3 +166,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-17 | Slice M4.5 (épica #18): reserva de llegadas restricted; despegue unificado con movimiento normal (se borra el caso especial); `_free_slots` cuenta al dron en vuelo contra su destino; test 2 drones se serializan por cuello restricted cap.1 | pytest 57 passed, lint/type en verde |
 | 2026-08-17 | Decisión estratégica Path A: validador-primero para cerrar M4; multi-camino/deadlock → M5 (medir antes de optimizar). Registrada en tabla de decisiones y reflejada en PLAN.md | — |
 | 2026-08-17 | Slice M4.6/Path A (épica #18): `ScheduleValidator` a multi-dron; replay por id (`_position`/`_in_flight`), ocupación de zona por turno, un movimiento por dron/turno, aterrizaje obligatorio, start→end; `_capacity`/`_links` propios; capacidad de enlace diferida; 3 tests nuevos | pytest 60 passed, lint/type en verde |
+| 2026-08-17 | Slice Path A-2 (épica #18): capacidad de enlace en el validador (`_link_caps`, cuenta cruces por turno, aterrizaje no cuenta por #15); juez completo (zona+enlace); 2 tests nuevos | pytest 62 passed, lint/type en verde |

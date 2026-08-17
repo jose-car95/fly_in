@@ -127,3 +127,34 @@ def test_rejects_a_drone_left_in_flight_mid_schedule() -> None:
             _map(zones, connections, nb_drones=2),
             ["D1-start-r1", "D2-start-r2"]
         ).validate()
+
+
+def _two_drone_wide_zone(link_capacity: int | None) -> FlyInMap:
+    """A start->a->goal map with 'a' at capacity 2 and given link capacity."""
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "a": Zone("a", 1, 0, max_drones=2),
+        "goal": Zone("goal", 2, 0, is_end=True)
+    }
+    connections = [
+        Connection("start", "a", link_capacity),
+        Connection("a", "goal", link_capacity)
+    ]
+    return _map(zones, connections, nb_drones=2)
+
+
+def test_rejects_a_connection_crossed_over_its_capacity() -> None:
+    # 'a' holds two drones, but 'start-a' (default link capacity 1) is
+    # crossed twice in one turn: illegal on the link even with zone room.
+    with pytest.raises(InvalidScheduleError):
+        ScheduleValidator(
+            _two_drone_wide_zone(None),
+            ["D1-a D2-a", "D1-goal D2-goal"]
+        ).validate()
+
+
+def test_accepts_parallel_crossings_within_link_capacity() -> None:
+    # With link capacity 2, both drones may cross the same connection at once.
+    ScheduleValidator(
+        _two_drone_wide_zone(2), ["D1-a D2-a", "D1-goal D2-goal"]
+    ).validate()
