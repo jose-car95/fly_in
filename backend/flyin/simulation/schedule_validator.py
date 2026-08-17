@@ -18,7 +18,7 @@ class ScheduleValidator:
     Attributes:
         _map: The map the schedule was produced for.
         _lines: The movement lines to judge, one turn each.
-        _links: Undirected connections as ``frozenset`` pairs for O(1) lookup.
+        _link_caps: Undirected connection to capacity, ``frozenset`` keys.
         _position: Each drone's current zone, by id.
         _in_flight: Each drone's pending restricted destination, or ``None``.
     """
@@ -34,10 +34,13 @@ class ScheduleValidator:
         """
         self._map = fly_in_map
         self._lines = movement_lines
-        # Own adjacency, built straight from the map, so the check shares no
-        # logic with the planner's Graph (that is the point of independence).
-        self._links = {
-            frozenset((c.zone_a, c.zone_b))
+        # Own adjacency and capacities, built straight from the map, so the
+        # check shares no logic with the planner (the point of independence).
+        self._link_caps: dict[frozenset[str], int] = {
+            frozenset((c.zone_a, c.zone_b)): (
+                c.max_link_capacity
+                if c.max_link_capacity is not None else 1
+            )
             for c in fly_in_map.connections
         }
         self._position: dict[int, str] = {}
@@ -66,33 +69,41 @@ class ScheduleValidator:
             line: One movement line, its tokens separated by spaces.
 
         Raises:
-            InvalidScheduleError: If a drone moves twice, or a drone that was
-                in flight fails to land this turn.
+            InvalidScheduleError: If a drone moves twice, a connection is
+                crossed over its capacity, or a drone that was in flight fails
+                to land this turn.
         """
         pending = {i for i, dest in self._in_flight.items() if dest}
         moved: set[int] = set()
+        crossings: dict[frozenset[str], int] = {}
         for token in line.split():
-            drone_id = self._apply_token(token)
+            drone_id, link = self._apply_token(token)
             if drone_id in moved:
                 raise InvalidScheduleError(
                     f"drone {drone_id} appears twice in one turn"
                 )
             moved.add(drone_id)
+            if link is not None:
+                crossings[link] = crossings.get(link, 0) + 1
+        self._check_link_capacity(crossings)
         stranded = pending - moved
         if stranded:
             raise InvalidScheduleError(
                 f"drone {min(stranded)} left in flight instead of landing"
             )
 
-    def _apply_token(self, token: str) -> int:
-        """Validate a single token, mutate its drone's state, return its id.
+    def _apply_token(
+        self, token: str
+    ) -> tuple[int, frozenset[str] | None]:
+        """Validate a token, mutate its drone, return its id and crossing.
 
         Args:
             token: A ``D<ID>-<zone>`` arrival or ``D<ID>-<a>-<b>`` in-flight
                 token.
 
         Returns:
-            The moving drone's id.
+            The moving drone's id and the connection it crossed this turn, or
+            ``None`` when it did not cross one (a restricted landing).
 
         Raises:
             InvalidScheduleError: If the token is malformed or its move is
@@ -101,12 +112,12 @@ class ScheduleValidator:
         drone_id, body = self._parse_token(token)
         parts = body.split("-")
         if len(parts) == 1:
-            self._apply_arrival(drone_id, parts[0])
+            crossed = self._apply_arrival(drone_id, parts[0])
         elif len(parts) == 2:
-            self._apply_takeoff(drone_id, parts[0], parts[1])
+            crossed = self._apply_takeoff(drone_id, parts[0], parts[1])
         else:
             raise InvalidScheduleError(f"malformed token {token!r}")
-        return drone_id
+        return drone_id, crossed
 
     def _parse_token(self, token: str) -> tuple[int, str]:
         """Split a token into its drone id and body.
@@ -132,13 +143,17 @@ class ScheduleValidator:
 
     def _apply_takeoff(
         self, drone_id: int, origin: str, target: str
-    ) -> None:
+    ) -> frozenset[str]:
         """Validate a restricted take-off and mark the drone in flight.
 
         Args:
             drone_id: The moving drone.
             origin: The zone the drone leaves.
             target: The restricted zone it flies toward.
+
+        Returns:
+            The connection crossed on this take-off turn (decision #15: the
+            transit meters the link only now, not on the landing turn).
 
         Raises:
             InvalidScheduleError: If the drone is already flying, takes off
@@ -161,8 +176,11 @@ class ScheduleValidator:
                 f"in-flight token toward non-restricted zone {target!r}"
             )
         self._in_flight[drone_id] = target
+        return frozenset((origin, target))
 
-    def _apply_arrival(self, drone_id: int, zone: str) -> None:
+    def _apply_arrival(
+        self, drone_id: int, zone: str
+    ) -> frozenset[str] | None:
         """Validate a drone landing on or stepping into a zone.
 
         A pending flight must land exactly on its destination; otherwise this
@@ -172,6 +190,10 @@ class ScheduleValidator:
         Args:
             drone_id: The moving drone.
             zone: The zone named by the arrival token.
+
+        Returns:
+            The connection crossed by a one-turn step, or ``None`` for a
+            landing (which already metered its link on the take-off turn).
 
         Raises:
             InvalidScheduleError: On a wrong landing zone, a missing
@@ -186,7 +208,7 @@ class ScheduleValidator:
                 )
             self._in_flight[drone_id] = None
             self._position[drone_id] = zone
-            return
+            return None
         origin = self._position[drone_id]
         if not self._are_connected(origin, zone):
             raise InvalidScheduleError(f"no connection {origin!r}-{zone!r}")
@@ -195,6 +217,7 @@ class ScheduleValidator:
                 f"zone {zone!r} cannot be entered in a single turn"
             )
         self._position[drone_id] = zone
+        return frozenset((origin, zone))
 
     def _check_occupancy(self) -> None:
         """Ensure no zone holds more parked drones than its capacity.
@@ -242,6 +265,25 @@ class ScheduleValidator:
             return float("inf")
         return zone.max_drones if zone.max_drones is not None else 1
 
+    def _check_link_capacity(
+        self, crossings: dict[frozenset[str], int]
+    ) -> None:
+        """Ensure no connection was crossed over its capacity this turn.
+
+        Args:
+            crossings: How many times each connection was crossed this turn.
+
+        Raises:
+            InvalidScheduleError: If any connection is over its capacity.
+        """
+        for link, count in crossings.items():
+            if count > self._link_caps[link]:
+                a, b = sorted(link)
+                raise InvalidScheduleError(
+                    f"connection {a!r}-{b!r} crossed {count} times "
+                    f"over capacity"
+                )
+
     def _are_connected(self, a: str, b: str) -> bool:
         """Whether an undirected connection ``a-b`` exists in the map."""
-        return frozenset((a, b)) in self._links
+        return frozenset((a, b)) in self._link_caps
