@@ -85,13 +85,33 @@ def test_zone_capacity_above_one_admits_several_drones() -> None:
         "a": Zone("a", 1, 0, max_drones=2),
         "goal": Zone("goal", 2, 0, is_end=True)
     }
-    connections = [Connection("start", "a"), Connection("a", "goal")]
+    # Links carry two crossings at once too, so the zone capacity is what
+    # bounds the flow (a capacity-1 link would throttle it to a pipeline).
+    connections = [
+        Connection("start", "a", 2),
+        Connection("a", "goal", 2)
+    ]
 
     lines = Simulator(_map(zones, connections, nb_drones=3)).run()
 
     # 'a' holds two drones at once, so D1 and D2 enter together while D3
     # waits; next turn both leave for 'goal', freeing 'a', and D3 enters.
     assert lines == ["D1-a D2-a", "D1-goal D2-goal D3-a", "D3-goal"]
+
+
+def test_link_capacity_throttles_below_zone_capacity() -> None:
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "a": Zone("a", 1, 0, max_drones=2),
+        "goal": Zone("goal", 2, 0, is_end=True)
+    }
+    # 'a' would hold two drones, but the default link capacity is 1, so only
+    # one drone may cross 'start-a' per turn: the flow pipelines anyway.
+    connections = [Connection("start", "a"), Connection("a", "goal")]
+
+    lines = Simulator(_map(zones, connections, nb_drones=2)).run()
+
+    assert lines == ["D1-a", "D1-goal D2-a", "D2-goal"]
 
 
 def test_engine_output_passes_the_independent_validator() -> None:
