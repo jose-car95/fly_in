@@ -5,17 +5,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M3 en progreso** (M0, M1, M2 cerrados). Motor + CLI + capas + warnings.
-- Último slice completado: M3.6 — máquina de estados del dron explícita. `Simulator.run()`
-  deja de recorrer pares de zonas (hop-driven) y pasa a un bucle por turnos (turn-driven):
-  una vuelta = un turno = una línea. Nace el `Enum` `DroneState` (`AT_ZONE`, `IN_TRANSIT`,
-  `DELIVERED`); el estado decide la transición (restricted se parte en despegue IN_TRANSIT +
-  aterrizaje). Salida idéntica (refactor, no cambio de comportamiento): la red son los tests
-  del `Simulator` + el `ScheduleValidator`. Test nuevo: la salida del motor pasa por el
-  validador independiente (las dos piezas de M3 se comprueban mutuamente). La transición
-  atómica `SimulationState → TurnPlan → SimulationState` se difiere a M4 (sin varios drones
-  no hay contención que arbitrar; ver decisión).
-- Anteriores (breve): M3.5 `ScheduleValidator` independiente (`position`+`in_flight_to`,
+- Milestone: **M4 en progreso** (M0, M1, M2, M3 cerrados). Multi-dron consciente de
+  capacidad.
+- Último slice completado: M4.1 — cola en zona de capacidad 1. El `Simulator` pasa de un
+  dron a `nb_drones` drones sobre el mismo camino más corto, con **plan de turno atómico**:
+  cada turno se calcula contra una foto del mundo (`_grant_moves`) y se aplica de golpe
+  (`_apply_move`), así la corrección no depende del orden de iteración. Los drones se
+  recorren front-first (los más avanzados primero) para que las salidas liberen hueco antes
+  de admitir entradas; empates por id. Nace la clase `Drone` (dueña de su ciclo de vida:
+  `takeoff`/`advance`) y `DroneState` se mueve a su módulo. Capacidad efectiva: terminales
+  ∞, resto `max_drones` o 1. Test: 2 drones hacen cola en una zona de capacidad 1. Enlace
+  (M4.4), reserva restricted (M4.5/#15), multi-camino (M4.6) y deadlocks (M4.7) diferidos.
+- Anteriores (breve): M3.6 máquina de estados del dron (`DroneState`, turn-driven) · M3.5
+  `ScheduleValidator` independiente (`position`+`in_flight_to`,
   adyacencia propia, `InvalidScheduleError`) · M3.4 tránsito restricted de 2 turnos en
   `Simulator.run()` (token en
   vuelo `D1-<origen>-<destino>` + llegada) · M3.3 `SolveResult(movement_lines, warnings)` +
@@ -25,14 +27,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (53 passed), `flake8 .` (limpio, límite 79),
-  `mypy .` con los flags de `make lint` (sin errores, 33 ficheros). `make lint` y
+- Verificado con comandos: `pytest` (54 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 35 ficheros). `make lint` y
   `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M4** (multi-dron): colas, capacidad de zona/enlace, y la
-  transición atómica `SimulationState → TurnPlan → SimulationState` diferida en M3.6 —
-  el plan de turno se aplica de forma atómica para que la corrección no dependa del orden
-  de iteración de los drones. Incluye la reserva futura de la llegada restricted (decisión
-  abierta #15: ventana de capacidad del enlace, fijar con `/decide` antes de implementar).
+- Siguiente paso propuesto: seguir M4 — capacidad de zona `max_drones > 1` (M4.3, casi
+  gratis con la capacidad efectiva ya leída: será sobre todo un test) y capacidad de enlace
+  (M4.4). Luego reserva de llegadas restricted (M4.5), que abre el `/decide` de la decisión
+  #15 (ventana de capacidad del enlace) antes de implementar; después multi-camino (M4.6) y
+  deadlocks (M4.7).
 
 ## Decisiones tomadas
 
@@ -64,6 +66,10 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-12 | #14: el token de conexión en vuelo usa `origen-destino` → `D<ID>-<origen>-<destino>` | Refleja la dirección del viaje (de dónde viene, a dónde va), es determinista y es la propuesta por defecto de SPEC_NOTES. El subject no fija la forma; origen-destino es la más informativa |
 | 2026-08-13 | M3.6: máquina de estados del dron con `Enum` `DroneState`, no un `bool in_flight` | El subject pide "máquina de estados explícita"; el enum nombra los estados y se defiende mejor en 42. Coste: ~6 líneas sobre el bool equivalente |
 | 2026-08-13 | M3.6: se difiere la transición atómica `SimulationState → TurnPlan → SimulationState` a M4 | Con un solo dron no hay contención de capacidad que arbitrar; construir el `TurnPlan` atómico ahora sería abstracción especulativa (ponytail). Se hace turn-driven ahora (la costura que M4 rellena) y la atomicidad llega cuando varios drones la hacen real |
+| 2026-08-13 | M4.1: la arbitración de capacidad vive en `Simulator` (fase decidir/aplicar), sin crear aún la carpeta `scheduling/` | Con un único camino compartido el turno atómico es pequeño y cohesivo dentro del simulador; separar una capa `scheduling` con un solo cliente sería especular. Nace cuando la reserva de tiempo/enlace o el multi-camino lo justifiquen (M4.4–M4.6) |
+| 2026-08-13 | M4.1: la clase `Drone` es dueña de su ciclo de vida; el `Simulator` decide la capacidad | El dron sabe *cómo* avanzar (`takeoff`/`advance`); el simulador decide *si* puede (capacidad). Separa responsabilidades y respeta full-OOP (comportamiento en clases). `DroneState` a su módulo para compartirlo sin import circular |
+| 2026-08-13 | M4.1: capacidad efectiva = ∞ en terminales, `max_drones` (o 1) en el resto; no se hardcodea 1 | Hardcodear 1 sería incorrecto: los drones se apilan en `start` (∞). Leer `max_drones` es la semántica correcta mínima y deja M4.3 (`max_drones > 1`) casi resuelto (será un test) |
+| 2026-08-13 | M4.1: turno front-first (drones más avanzados primero) para "salidas antes que entradas" | Recorrer del final hacia atrás garantiza que quien sale libera su hueco antes de admitir al de detrás, sin depender del orden de iteración (invariante SPEC_NOTES §2). Empates en la misma zona por id ascendente para determinismo |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -144,3 +150,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-12 | Slice M3.4 (épica #17): tránsito restricted de 2 turnos en `Simulator.run()` (bucle por pares, token en vuelo `D1-<origen>-<destino>` + llegada); decisión #14 registrada (SPEC_NOTES §1 + tabla); test `test_restricted_zone_takes_two_turns`. Cierra #14 | pytest 47 passed, lint/type en verde |
 | 2026-08-12 | Slice M3.5 (épica #17): nace `ScheduleValidator` (validador independiente) + `InvalidScheduleError`; reproduce el recorrido de un dron (`position`+`in_flight_to`) y rechaza salto sin conexión, forma restricted mala o no-llegada a `end`; adyacencia propia (no reutiliza `Graph`); 5 tests nuevos | pytest 52 passed, lint/type en verde |
 | 2026-08-13 | Slice M3.6 (épica #17): máquina de estados del dron explícita; `Simulator.run()` pasa de hop-driven a turn-driven con `Enum` `DroneState` (`AT_ZONE`/`IN_TRANSIT`/`DELIVERED`); salida idéntica (refactor); test nuevo motor⊨validador; `TurnPlan` atómico diferido a M4 (decisión) | pytest 53 passed, lint/type en verde |
+| 2026-08-13 | Slice M4.1 (épica #18): multi-dron con plan de turno atómico (decidir/aplicar) y cola en zona de capacidad 1; nace la clase `Drone`, `DroneState` a su módulo; capacidad efectiva (∞ terminales); front-first para salidas-antes-de-entradas; test 2 drones en cola; enlace/restricted/multi-camino/deadlock diferidos | pytest 54 passed, lint/type en verde |
