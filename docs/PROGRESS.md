@@ -5,19 +5,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M4 en progreso** (M0, M1, M2, M3 cerrados). Multi-dron consciente de
-  capacidad.
-- Estrategia (2026-08-17, Path A): el motor de un solo camino ya resuelve los 10 mapas
-  oficiales de forma válida y terminante (listón obligatorio de M4 cumplido). Multi-camino
-  y detección de deadlock son OPTIMIZACIÓN → se mueven a M5 (el subject pide medir antes de
-  optimizar). M4 se cierra probando la validez con el juez independiente. Ver decisión.
-- Último slice completado: Path A slice 2 — capacidad de enlace en el validador. Ahora
-  `ScheduleValidator` cuenta los cruces de cada conexión por turno y rechaza si superan
-  `max_link_capacity` (`_link_caps` dict, defecto 1). Respeta la decisión #15: un aterrizaje
-  restricted NO cuenta como cruce (ya se midió al despegar). Con esto el juez está COMPLETO
-  (zona + enlace), independiente del motor. 2 tests nuevos (rechaza sobre-cruce / acepta
-  cruce paralelo legal). Falta el paso de cierre: pasarlo por los 10 mapas oficiales.
-- Anteriores (breve): M4.6 validador multi-dron (replay por id, ocupación de zona, aterrizaje
+- Milestone: **M4 CERRADO** (M0, M1, M2, M3, M4 cerrados). Multi-dron consciente de
+  capacidad, con validez DEMOSTRADA por el juez independiente en los 10 mapas oficiales.
+  Siguiente milestone: **M5** (benchmarks + optimización, incluye multi-camino y deadlock
+  movidos aquí por Path A).
+- Último slice completado: cierre de M4 (Path A, paso final) — `tests/test_official_maps.py`:
+  para cada uno de los 10 mapas oficiales, parsea → corre el motor → pasa la salida por el
+  `ScheduleValidator` completo. Los 10 validan (11 tests con el guard): el motor de un solo
+  camino produce schedules VÁLIDOS y terminantes en todos, confirmado por el juez
+  independiente. No se destapó ningún bug. Esto cierra el listón obligatorio de M4.
+- Estrategia (2026-08-17, Path A): multi-camino y detección de deadlock son OPTIMIZACIÓN →
+  movidos a M5 (el subject pide medir antes de optimizar). Ver decisión.
+- Anteriores (breve): Path A slice 2 capacidad de enlace en el validador (juez completo
+  zona+enlace) · M4.6 validador multi-dron (replay por id, ocupación de zona, aterrizaje
   obligatorio, start→end) · M4.5 reserva de llegadas restricted (dron en vuelo cuenta contra su
   destino; despegue unificado con movimiento normal; decisión #15 Opción A) · M4.4 capacidad
   de enlace (`_link_slots`, clave `frozenset`, defecto 1)
@@ -34,13 +34,13 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (62 passed), `flake8 .` (limpio, límite 79),
-  `mypy .` con los flags de `make lint` (sin errores, 35 ficheros). `make lint` y
+- Verificado con comandos: `pytest` (73 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 36 ficheros). `make lint` y
   `make test` en verde como en la CI.
-- Siguiente paso propuesto (Path A, cierre de M4): un test que, para cada uno de los 10
-  mapas oficiales, corra el motor y pase su salida por el validador ya completo → validez
-  DEMOSTRADA por el juez independiente. Puede destapar bugs del motor (sería un hallazgo
-  valioso). Después M5 (benchmarks + multi-camino guiado por medidas).
+- Siguiente paso propuesto: **M5** — montar el benchmark harness que mide el makespan base
+  de cada mapa oficial (línea base), comparándolo contra su objetivo de turnos; luego
+  introducir multi-camino como optimización guiada por esas medidas. El harness compara cada
+  cambio contra validez (validador) y makespan previo.
 
 ## Decisiones tomadas
 
@@ -167,3 +167,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-17 | Decisión estratégica Path A: validador-primero para cerrar M4; multi-camino/deadlock → M5 (medir antes de optimizar). Registrada en tabla de decisiones y reflejada en PLAN.md | — |
 | 2026-08-17 | Slice M4.6/Path A (épica #18): `ScheduleValidator` a multi-dron; replay por id (`_position`/`_in_flight`), ocupación de zona por turno, un movimiento por dron/turno, aterrizaje obligatorio, start→end; `_capacity`/`_links` propios; capacidad de enlace diferida; 3 tests nuevos | pytest 60 passed, lint/type en verde |
 | 2026-08-17 | Slice Path A-2 (épica #18): capacidad de enlace en el validador (`_link_caps`, cuenta cruces por turno, aterrizaje no cuenta por #15); juez completo (zona+enlace); 2 tests nuevos | pytest 62 passed, lint/type en verde |
+| 2026-08-17 | Cierre M4 (épica #18): `tests/test_official_maps.py` corre el motor y valida su salida en los 10 mapas oficiales (11 tests con guard); los 10 validan, sin bugs. Validez demostrada por el juez independiente. EVALUATION.md: 11 ítems a EVIDENCED | pytest 73 passed, lint/type en verde |
