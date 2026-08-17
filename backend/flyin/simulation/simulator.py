@@ -109,37 +109,44 @@ class Simulator:
         active = [drone for drone in drones if drone.is_active]
         granted = [drone for drone in active if drone.is_in_transit]
         parked = [drone for drone in active if drone.is_at_zone]
-        free = self._free_slots(parked)
+        free = self._free_slots(active)
         link_free = self._link_slots()
         parked.sort(key=lambda drone: (-drone.route_position, drone.id))
         for drone in parked:
             origin, target = drone.current_zone, drone.next_zone
-            if self._is_restricted(target):
-                # Restricted take-off: reserving the arrival slot and metering
-                # the connection across the transit is M4.5 (open decision
-                # #15); a single drone has no contention.
-                granted.append(drone)
-                continue
             link = frozenset((origin, target))
+            # A normal step and a restricted take-off gate the same way: both
+            # leave the origin and claim the target. For a restricted target
+            # the claim is a reservation of the arrival slot (decision #15:
+            # the connection is metered only on this take-off turn), which is
+            # what makes the mandatory landing next turn always legal.
             if free[target] > 0 and link_free[link] > 0:
                 free[target] -= 1
-                free[origin] += 1  # its slot frees on exit
+                free[origin] += 1  # its slot frees as it leaves
                 link_free[link] -= 1
                 granted.append(drone)
         return granted
 
-    def _free_slots(self, parked: list[Drone]) -> dict[str, float]:
+    def _free_slots(self, active: list[Drone]) -> dict[str, float]:
         """Room left in each zone before this turn's exits are applied.
 
+        An in-flight drone still counts against its destination: it reserved
+        that slot on take-off and will land on it, so the room stays claimed
+        until it lands.
+
         Args:
-            parked: The drones currently parked on a zone.
+            active: The drones still in play (parked or in flight).
 
         Returns:
             A zone-name to free-capacity map (``inf`` for the terminals).
         """
         free = {zone: self._capacity(zone) for zone in self._map.zones}
-        for drone in parked:
-            free[drone.current_zone] -= 1
+        for drone in active:
+            claimed = (
+                drone.next_zone if drone.is_in_transit
+                else drone.current_zone
+            )
+            free[claimed] -= 1
         return free
 
     def _link_slots(self) -> dict[frozenset[str], int]:

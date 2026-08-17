@@ -22,8 +22,12 @@ Toda ambigüedad nueva se registra aquí o en `PROGRESS.md` antes de implementar
   subject no fija la forma (zona gris); origen-destino es determinista e informa de
   hacia dónde va el dron. Lleva dos guiones (p. ej. `D1-A-B`), coherente con el
   guion de la sintaxis de conexión del mapa.
-- ABIERTO: ventana exacta en que el tránsito consume capacidad del enlace (¿solo el
-  turno de salida o ambos turnos?). Fijar con tests en M3/M4 antes de optimizar.
+- DECISIÓN (2026-08-17, #15): el tránsito restricted consume la capacidad del enlace
+  SOLO en el turno de salida (T1, en vuelo), no en el de llegada (T2). Un tránsito gasta
+  el enlace igual que un movimiento normal: 1 travesía en 1 turno; el segundo turno es la
+  entrada en la zona, no una segunda travesía. Es uniforme con el resto del motor y
+  coherente con el orden del turno de §2 (las llegadas se procesan antes que las salidas,
+  así que un aterrizaje libera el enlace para un despegue el mismo turno).
 
 ## 2. Orden de evaluación del turno atómico
 
