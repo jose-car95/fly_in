@@ -7,15 +7,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M4 en progreso** (M0, M1, M2, M3 cerrados). Multi-dron consciente de
   capacidad.
-- Último slice completado: M4.5 — reserva de llegadas restricted. Un despegue restricted
-  solo se concede si hay hueco reservable en la zona destino para el turno de llegada; si no,
-  el dron espera (no puede esperar en la conexión). Implementado unificando el despegue con
-  el movimiento normal: `_grant_moves` ya no trata restricted aparte (se borra el caso
-  especial), y `_free_slots` cuenta al dron en vuelo contra su **destino** (la reserva
-  persiste hasta que aterriza). Eso hace que el aterrizaje obligatorio sea siempre legal.
-  El enlace se mide solo en el turno de salida (decisión #15, Opción A). Test: 2 drones se
-  serializan por un cuello restricted de capacidad 1.
-- Anteriores (breve): M4.4 capacidad de enlace (`_link_slots`, clave `frozenset`, defecto 1)
+- Estrategia (2026-08-17, Path A): el motor de un solo camino ya resuelve los 10 mapas
+  oficiales de forma válida y terminante (listón obligatorio de M4 cumplido). Multi-camino
+  y detección de deadlock son OPTIMIZACIÓN → se mueven a M5 (el subject pide medir antes de
+  optimizar). M4 se cierra probando la validez con el juez independiente. Ver decisión.
+- Último slice completado: M4.6 (Path A) — validador multi-dron. `ScheduleValidator` deja de
+  ser de 1 dron y reproduce el schedule siguiendo a cada dron por id (`_position`/`_in_flight`
+  dicts). Comprueba: ocupación de zona por turno ≤ capacidad, un solo movimiento por dron y
+  turno, aterrizaje obligatorio (dron en vuelo debe aterrizar al turno siguiente), y que
+  todos empiecen en start y acaben en end. `_capacity`/`_links` propios (independiente del
+  motor a propósito). Capacidad de ENLACE aún no (slice siguiente). 3 tests nuevos.
+- Anteriores (breve): M4.5 reserva de llegadas restricted (dron en vuelo cuenta contra su
+  destino; despegue unificado con movimiento normal; decisión #15 Opción A) · M4.4 capacidad
+  de enlace (`_link_slots`, clave `frozenset`, defecto 1)
   · M4.3 test de caracterización de `max_drones > 1` · M4.1 multi-dron con
   plan de turno atómico (decidir/aplicar, front-first) + clase `Drone` + capacidad efectiva
   (∞ terminales) · M3.6 máquina de estados del dron (`DroneState`, turn-driven) · M3.5
@@ -29,13 +33,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (57 passed), `flake8 .` (limpio, límite 79),
+- Verificado con comandos: `pytest` (60 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 35 ficheros). `make lint` y
   `make test` en verde como en la CI.
-- Siguiente paso propuesto: **M4.6** multi-camino — repartir los drones entre varios
-  caminos candidatos (hoy todos comparten el camino más corto), con espera estratégica.
-  Es el primer slice donde el orden front-first (que asume camino único) hay que
-  generalizar. Después deadlocks (M4.7).
+- Siguiente paso propuesto (Path A): añadir al validador el invariante de **capacidad de
+  enlace** (ninguna conexión cruzada más veces de las permitidas por turno), y luego un test
+  que pase el validador ya completo sobre la salida del motor en los 10 mapas oficiales →
+  cierra M4 con validez DEMOSTRADA por el juez independiente. Después M5 (benchmarks +
+  multi-camino guiado por medidas).
 
 ## Decisiones tomadas
 
@@ -74,6 +79,7 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | 2026-08-17 | M4.4: capacidad de enlace con clave no dirigida `frozenset{a,b}`, cupo compartido entre ambos sentidos, defecto 1; solo movimientos normales | Refleja la FACT del subject (conexión bidireccional, capacidad compartida). El consumo durante tránsito restricted es la decisión abierta #15 → se difiere a M4.5 para no prejuzgarla. El fixture de M4.3 pasa a `max_link_capacity=2` porque, sin ello, mover 2 drones por la misma conexión sería ilegal bajo las reglas completas (no es debilitar el test: es corregir el mapa al modelo completo conservando lo que demuestra) |
 | 2026-08-17 | #15: el tránsito restricted consume el enlace SOLO en el turno de salida (T1), no en el de llegada (T2) | Uniforme con el movimiento normal (1 travesía en 1 turno; el 2º turno es entrar en la zona, no cruzar) y coherente con el orden del turno de §2 (llegadas antes que salidas → un aterrizaje libera el enlace para un despegue el mismo turno). Cierra la decisión abierta #15; también en SPEC_NOTES §1 |
 | 2026-08-17 | M4.5: la reserva restricted se modela contando al dron en vuelo contra su destino en `_free_slots`, unificando despegue y movimiento normal en `_grant_moves` | El despegue y el paso normal se comportan igual (liberan origen, reclaman destino); la única diferencia es en `_apply_move` (takeoff vs advance). Borra el caso especial en vez de añadir uno, y la reserva persistente hace que el aterrizaje obligatorio sea siempre legal sin lógica extra de "calendario" |
+| 2026-08-17 | Path A: cerrar M4 probando validez con el validador multi-dron; mover multi-camino y deadlock a M5 (optimización) | El motor de un camino ya da schedules válidos y terminantes en los 10 mapas (listón de M4). Multi-camino es optimización de makespan; el subject pide "primero línea base medida, optimizar solo a partir de mediciones" (M5). Construirlo antes de tener benchmark sería optimizar a ciegas (ponytail). Reordena el PLAN: M4.6/M4.7 pasan a M5 |
 
 ## Roadmap de arquitectura (cuándo nace cada carpeta y por qué)
 
@@ -158,3 +164,5 @@ actual de `gh` sí lo tiene):
 | 2026-08-17 | Slice M4.4 (épica #18): capacidad de enlace en `_grant_moves` (`_link_slots`, clave `frozenset`, defecto 1, ambos sentidos); test RED enlace-estrangula-zona; fixture de M4.3 a `max_link_capacity=2`; consumo en tránsito restricted diferido a #15/M4.5 | pytest 56 passed, lint/type en verde |
 | 2026-08-17 | Decisión #15 (Opción A): el enlace se mide solo en el turno de salida del tránsito restricted; registrada en SPEC_NOTES §1 y tabla de decisiones (vía `/decide`) | — |
 | 2026-08-17 | Slice M4.5 (épica #18): reserva de llegadas restricted; despegue unificado con movimiento normal (se borra el caso especial); `_free_slots` cuenta al dron en vuelo contra su destino; test 2 drones se serializan por cuello restricted cap.1 | pytest 57 passed, lint/type en verde |
+| 2026-08-17 | Decisión estratégica Path A: validador-primero para cerrar M4; multi-camino/deadlock → M5 (medir antes de optimizar). Registrada en tabla de decisiones y reflejada en PLAN.md | — |
+| 2026-08-17 | Slice M4.6/Path A (épica #18): `ScheduleValidator` a multi-dron; replay por id (`_position`/`_in_flight`), ocupación de zona por turno, un movimiento por dron/turno, aterrizaje obligatorio, start→end; `_capacity`/`_links` propios; capacidad de enlace diferida; 3 tests nuevos | pytest 60 passed, lint/type en verde |
