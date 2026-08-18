@@ -6,20 +6,20 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: **M5 en progreso** (M0–M4 cerrados). Benchmarks + optimización.
-- Último slice completado: M5.1 — benchmark harness. Nace `flyin/benchmark/`: `Benchmark`
-  (mide UN mapa: makespan = nº de líneas, y validez pasándolo por el `ScheduleValidator`),
-  `BenchmarkResult` (value object con `margin`), `BenchmarkSuite` (mide los 10 y formatea la
-  tabla), entry point `python -m flyin.benchmark` + `make bench`. Línea base registrada en
-  EVALUATION.md.
-- **HALLAZGO clave de la línea base:** el motor de un solo camino **ya cumple los 9
-  objetivos obligatorios** (easy/medium/hard: 8 por debajo, `circular_loop` justo en 15).
-  El único por encima es el **challenger opcional** (67 vs 45, "casi irresoluble" por
-  diseño, no cuenta para validación). Multi-camino solo aportaría en el challenger →
-  por ponytail y "medir antes de optimizar", su valor obligatorio es CERO. Pendiente de
-  decidir con Jose la dirección de M5 (ver siguiente paso).
-- Estrategia (2026-08-17, Path A): multi-camino y detección de deadlock se movieron a M5.
-  La medición de M5.1 muestra que NO hacen falta para el listón obligatorio de turnos.
-- Anteriores (breve): Path A slice 2 capacidad de enlace en el validador (juez completo
+- Último slice completado: M5.2 — `CandidatePaths` (varios caminos candidatos). `Dijkstra`
+  gana un parámetro opcional `penalties` (extra de coste por zona, retrocompatible);
+  `CandidatePaths(map, count).find()` corre Dijkstra repetidamente penalizando las zonas
+  intermedias de cada ruta hallada, así diverge en el medio pero reutiliza los embudos
+  forzados (heurística de penalización, sin librerías). Verificado en el challenger real:
+  encuentra las 3 cadenas restricted paralelas (`conv1-2-3`, `4-5-6`, `7-8-9`). 2 tests.
+- Contexto (medir antes de optimizar): la línea base (M5.1) mostró que los 9 obligatorios ya
+  cumplen objetivo; el único por encima es el challenger (67 vs 45). Es el bonus
+  (100→125 pts, +25), y por eso Jose decidió PERSEGUIR multi-camino (2026-08-18) para bajar
+  el challenger a <45. Cota inferior analizada ≈ 43 (embudos de entrada/salida a 1 dron/turno)
+  → alcanzable pero AJUSTADO. El cuello actual: los 25 drones por 1 cadena restricted cap-1
+  (1 dron/2 turnos). Palanca: repartir por las 3 cadenas paralelas.
+- Anteriores (breve): M5.1 benchmark harness (`Benchmark`/`BenchmarkResult`/`BenchmarkSuite`,
+  `make bench`, línea base) · Path A slice 2 capacidad de enlace en el validador (juez completo
   zona+enlace) · M4.6 validador multi-dron (replay por id, ocupación de zona, aterrizaje
   obligatorio, start→end) · M4.5 reserva de llegadas restricted (dron en vuelo cuenta contra su
   destino; despegue unificado con movimiento normal; decisión #15 Opción A) · M4.4 capacidad
@@ -37,10 +37,15 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (75 passed), `flake8 .` (limpio, límite 79),
-  `mypy .` con los flags de `make lint` (sin errores, 42 ficheros). `make lint`,
+- Verificado con comandos: `pytest` (77 passed), `flake8 .` (limpio, límite 79),
+  `mypy .` con los flags de `make lint` (sin errores, 44 ficheros). `make lint`,
   `make test` y `make bench` en verde.
-- Siguiente paso (DECISIÓN de Jose, 2026-08-18): PERSEGUIR multi-camino. Motivo: el
+- Siguiente paso: **repartir los drones** entre los caminos candidatos (nueva pieza de
+  scheduling / cambio en el `Simulator`), en vez de meter a los 25 por la ruta más corta.
+  Medir con `make bench` que el challenger baja de 67. Ojo: los caminos comparten los
+  embudos, así que hay que confirmar que el arbitraje de turno sigue dando schedules válidos
+  con rutas solapadas (el validador lo comprueba). Objetivo final: bajar el challenger a <45.
+- Contexto histórico (Jose, 2026-08-18): PERSEGUIR multi-camino. Motivo: el
   challenger es el bonus (100→125 pts, +25). Aunque no aporta al listón obligatorio, sí a la
   nota máxima. Objetivo: bajar `the_impossible_dream` de 67 a <45 turnos repartiendo drones
   entre varios caminos. El benchmark harness (M5.1) es el juez de progreso: cada cambio se
@@ -173,3 +178,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-17 | Slice Path A-2 (épica #18): capacidad de enlace en el validador (`_link_caps`, cuenta cruces por turno, aterrizaje no cuenta por #15); juez completo (zona+enlace); 2 tests nuevos | pytest 62 passed, lint/type en verde |
 | 2026-08-17 | Cierre M4 (épica #18): `tests/test_official_maps.py` corre el motor y valida su salida en los 10 mapas oficiales (11 tests con guard); los 10 validan, sin bugs. Validez demostrada por el juez independiente. EVALUATION.md: 11 ítems a EVIDENCED | pytest 73 passed, lint/type en verde |
 | 2026-08-18 | Slice M5.1 (épica #19): benchmark harness (`flyin/benchmark/`: `Benchmark`, `BenchmarkResult`, `BenchmarkSuite`, `make bench`); línea base registrada en EVALUATION.md; 3 ítems de benchmarks + eficiencia a EVIDENCED. Hallazgo: los 9 obligatorios ya cumplen objetivo | pytest 75 passed, lint/type en verde |
+| 2026-08-18 | Slice M5.2 (épica #19): `CandidatePaths` (Dijkstra con `penalties` opcional + penalización de zonas intermedias); halla varias rutas que divergen en el medio y comparten embudos; verificado que encuentra las 3 cadenas paralelas del challenger; 2 tests | pytest 77 passed, lint/type en verde |
