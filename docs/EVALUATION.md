@@ -19,11 +19,11 @@ Solo marcar `EVIDENCED` con un test, comando, fichero o demo concreta.
 | Terminación | Parar exactamente al entregar todos | `test_official_maps` (terminan) + `test_simulator` | EVIDENCED |
 | Caminos válidos | Lineal, múltiple, cuellos de botella, tipos | `test_official_maps` (validador acepta los 10) | EVIDENCED |
 | Conflictos | Competición, simultaneidad, restricted multi-turno | `test_simulator` (cola, serialize restricted) + validador | EVIDENCED |
-| Eficiencia | 10+ drones, grafos complejos, tiempo razonable | Informe de benchmarks | NOT_STARTED |
+| Eficiencia | 10+ drones, grafos complejos, tiempo razonable | `make bench` (12/15/25 drones; suite <0.1s) | EVIDENCED |
 | Explicación | Complejidad, diseño, trade-offs de capacidad/optimización | README + notas de defensa | NOT_STARTED |
-| Benchmarks Easy | Categoría <10; objetivos 6/8/6 con 2/4/4 drones | Tabla fresca | NOT_STARTED |
-| Benchmarks Medium | 10–30; objetivos 12/15/12 con 5/6/5 | Tabla fresca | NOT_STARTED |
-| Benchmarks Hard | <60; objetivos 30/35/45 con 8/12/15 | Tabla fresca | NOT_STARTED |
+| Benchmarks Easy | Categoría <10; objetivos 6/8/6 con 2/4/4 drones | `make bench`: 4/6/4, todos válidos y ≤ objetivo | EVIDENCED |
+| Benchmarks Medium | 10–30; objetivos 12/15/12 con 5/6/5 | `make bench`: 8/15/8, todos válidos y ≤ objetivo | EVIDENCED |
+| Benchmarks Hard | <60; objetivos 30/35/45 con 8/12/15 | `make bench`: 13/16/26, todos válidos y ≤ objetivo | EVIDENCED |
 | Casos límite | 1 dron, cuellos, desconexo, conexiones inválidas, capacidad 0/alta (≥4/5) | Suite de edge cases | NOT_STARTED |
 | Gestión de errores | Mensajes claros para inválido/desconexo | Tests CLI | NOT_STARTED |
 | Calidad de código | Estructura, docs, estilo, visual integrado | Review + lint | NOT_STARTED |
@@ -52,15 +52,23 @@ Preparar sin sobreajustar:
 
 ## Registro de benchmarks
 
+Línea base (motor de un solo camino, `make bench`), 2026-08-18:
+
 | Mapa | Drones | Objetivo | Resultado | Válido | Fecha/commit |
 | --- | ---: | ---: | ---: | --- | --- |
-| maps/easy/01_linear_path.txt | 2 | ≤6 | — | — | — |
-| maps/easy/02_simple_fork.txt | 4 | ≤8 | — | — | — |
-| maps/easy/03_basic_capacity.txt | 4 | ≤6 | — | — | — |
-| maps/medium/01_dead_end_trap.txt | 5 | ≤12 | — | — | — |
-| maps/medium/02_circular_loop.txt | 6 | ≤15 | — | — | — |
-| maps/medium/03_priority_puzzle.txt | 5 | ≤12 | — | — | — |
-| maps/hard/01_maze_nightmare.txt | 8 | ≤30 | — | — | — |
-| maps/hard/02_capacity_hell.txt | 12 | ≤35 | — | — | — |
-| maps/hard/03_ultimate_challenge.txt | 15 | ≤45 | — | — | — |
-| maps/challenger/01_the_impossible_dream.txt | 25 | <45 (opcional) | — | — | — |
+| maps/easy/01_linear_path.txt | 2 | ≤6 | 4 | sí | 2026-08-18 (baseline) |
+| maps/easy/02_simple_fork.txt | 4 | ≤8 | 6 | sí | 2026-08-18 (baseline) |
+| maps/easy/03_basic_capacity.txt | 4 | ≤6 | 4 | sí | 2026-08-18 (baseline) |
+| maps/medium/01_dead_end_trap.txt | 5 | ≤12 | 8 | sí | 2026-08-18 (baseline) |
+| maps/medium/02_circular_loop.txt | 6 | ≤15 | 15 | sí | 2026-08-18 (baseline) |
+| maps/medium/03_priority_puzzle.txt | 5 | ≤12 | 8 | sí | 2026-08-18 (baseline) |
+| maps/hard/01_maze_nightmare.txt | 8 | ≤30 | 13 | sí | 2026-08-18 (baseline) |
+| maps/hard/02_capacity_hell.txt | 12 | ≤35 | 16 | sí | 2026-08-18 (baseline) |
+| maps/hard/03_ultimate_challenge.txt | 15 | ≤45 | 26 | sí | 2026-08-18 (baseline) |
+| maps/challenger/01_the_impossible_dream.txt | 25 | <45 (opcional) | 67 | sí | 2026-08-18 (baseline) |
+
+Lectura: los 9 mapas obligatorios (easy/medium/hard) ya cumplen su objetivo con
+el motor de un solo camino (8 por debajo, `circular_loop` justo en 15). El único
+por encima es el challenger opcional (67 vs 45). Multi-camino solo aportaría en
+el challenger (y quizá margen en `circular_loop`); no es necesario para el
+listón obligatorio de turnos.
