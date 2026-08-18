@@ -130,9 +130,12 @@ class Simulator:
     def _free_slots(self, active: list[Drone]) -> dict[str, float]:
         """Room left in each zone before this turn's exits are applied.
 
-        An in-flight drone still counts against its destination: it reserved
-        that slot on take-off and will land on it, so the room stays claimed
-        until it lands.
+        Only parked drones count against a zone. An in-flight drone does not
+        hold its restricted destination across the whole transit, so a
+        follower can take off toward that zone the same turn the current
+        occupant leaves it: restricted zones pipeline one drone per turn
+        instead of one every two. The occupant is expected to keep flowing;
+        the independent validator confirms no zone is ever over capacity.
 
         Args:
             active: The drones still in play (parked or in flight).
@@ -142,11 +145,8 @@ class Simulator:
         """
         free = {zone: self._capacity(zone) for zone in self._map.zones}
         for drone in active:
-            claimed = (
-                drone.next_zone if drone.is_in_transit
-                else drone.current_zone
-            )
-            free[claimed] -= 1
+            if drone.is_at_zone:
+                free[drone.current_zone] -= 1
         return free
 
     def _link_slots(self) -> dict[frozenset[str], int]:

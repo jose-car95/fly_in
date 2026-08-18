@@ -6,12 +6,16 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 ## Estado actual
 
 - Milestone: **M5 en progreso** (M0–M4 cerrados). Benchmarks + optimización.
-- Último slice completado: M5.2 — `CandidatePaths` (varios caminos candidatos). `Dijkstra`
-  gana un parámetro opcional `penalties` (extra de coste por zona, retrocompatible);
-  `CandidatePaths(map, count).find()` corre Dijkstra repetidamente penalizando las zonas
-  intermedias de cada ruta hallada, así diverge en el medio pero reutiliza los embudos
-  forzados (heurística de penalización, sin librerías). Verificado en el challenger real:
-  encuentra las 3 cadenas restricted paralelas (`conv1-2-3`, `4-5-6`, `7-8-9`). 2 tests.
+- Último slice completado: M5.3 — pipeline restricted a 1/turno. `_free_slots` deja de
+  contar al dron en vuelo contra su destino (simplificación, quita código): un dron puede
+  despegar hacia una restricted el mismo turno que el ocupante sale, así las zonas restricted
+  pasan de 1 dron/2 turnos a 1/turno. **RESULTADO: challenger 67 → 43 (bonus <45 conseguido,
+  single-path, sin multi-camino)**; `circular_loop` 15 → 10; los 10 mapas siguen VÁLIDOS.
+  CAVEAT: el motor pasa de "correcto por construcción" a OPTIMISTA — en un mapa patológico
+  (restricted que se atasca) podría dar salida inválida; el validador lo detectaría pero no
+  hay reintento. Todos los mapas provistos validan. Red de seguridad pendiente (ver siguiente).
+- Anteriores (breve): M5.2 `CandidatePaths` (Dijkstra con `penalties` + penalización; halla
+  las 3 cadenas paralelas del challenger) — YA NO necesario para el bonus, se retirará.
 - Contexto (medir antes de optimizar): la línea base (M5.1) mostró que los 9 obligatorios ya
   cumplen objetivo; el único por encima es el challenger (67 vs 45). Es el bonus
   (100→125 pts, +25), y por eso Jose decidió PERSEGUIR multi-camino (2026-08-18) para bajar
@@ -40,11 +44,12 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 - Verificado con comandos: `pytest` (77 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 44 ficheros). `make lint`,
   `make test` y `make bench` en verde.
-- Siguiente paso: **repartir los drones** entre los caminos candidatos (nueva pieza de
-  scheduling / cambio en el `Simulator`), en vez de meter a los 25 por la ruta más corta.
-  Medir con `make bench` que el challenger baja de 67. Ojo: los caminos comparten los
-  embudos, así que hay que confirmar que el arbitraje de turno sigue dando schedules válidos
-  con rutas solapadas (el validador lo comprueba). Objetivo final: bajar el challenger a <45.
+- Siguiente paso (decidido con Jose): (1) **retirar el multi-camino** (`CandidatePaths` +
+  su test + el parámetro `penalties` de Dijkstra) porque el bonus ya se logró single-path y
+  ya no aporta — código muerto; (2) **red de seguridad**: el solver valida su propia salida
+  y, si fuera inválida (un mapa patológico), cae al modo conservador (reserva estricta), para
+  recuperar la corrección demostrable en cualquier mapa sin perder la velocidad en los que
+  fluyen.
 - Contexto histórico (Jose, 2026-08-18): PERSEGUIR multi-camino. Motivo: el
   challenger es el bonus (100→125 pts, +25). Aunque no aporta al listón obligatorio, sí a la
   nota máxima. Objetivo: bajar `the_impossible_dream` de 67 a <45 turnos repartiendo drones
@@ -179,3 +184,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-17 | Cierre M4 (épica #18): `tests/test_official_maps.py` corre el motor y valida su salida en los 10 mapas oficiales (11 tests con guard); los 10 validan, sin bugs. Validez demostrada por el juez independiente. EVALUATION.md: 11 ítems a EVIDENCED | pytest 73 passed, lint/type en verde |
 | 2026-08-18 | Slice M5.1 (épica #19): benchmark harness (`flyin/benchmark/`: `Benchmark`, `BenchmarkResult`, `BenchmarkSuite`, `make bench`); línea base registrada en EVALUATION.md; 3 ítems de benchmarks + eficiencia a EVIDENCED. Hallazgo: los 9 obligatorios ya cumplen objetivo | pytest 75 passed, lint/type en verde |
 | 2026-08-18 | Slice M5.2 (épica #19): `CandidatePaths` (Dijkstra con `penalties` opcional + penalización de zonas intermedias); halla varias rutas que divergen en el medio y comparten embudos; verificado que encuentra las 3 cadenas paralelas del challenger; 2 tests | pytest 77 passed, lint/type en verde |
+| 2026-08-18 | Slice M5.3 (épica #19): pipeline restricted a 1/turno (`_free_slots` no cuenta al dron en vuelo). CHALLENGER 67→43 (bonus conseguido, single-path); circular_loop 15→10; 10 mapas siguen válidos. Motor ahora optimista (caveat); red de seguridad pendiente. Analizado el repo de mario-asenjo para entender la técnica | pytest 77 passed, lint/type en verde |

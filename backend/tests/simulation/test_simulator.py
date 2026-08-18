@@ -114,7 +114,7 @@ def test_link_capacity_throttles_below_zone_capacity() -> None:
     assert lines == ["D1-a", "D1-goal D2-a", "D2-goal"]
 
 
-def test_two_drones_serialize_through_a_restricted_zone() -> None:
+def test_two_drones_pipeline_through_a_restricted_zone() -> None:
     zones = {
         "start": Zone("start", 0, 0, is_start=True),
         "r": Zone("r", 1, 0, zone_type=ZoneType.RESTRICTED),
@@ -124,13 +124,13 @@ def test_two_drones_serialize_through_a_restricted_zone() -> None:
 
     lines = Simulator(_map(zones, connections, nb_drones=2)).run()
 
-    # 'r' holds one drone at a time. D1 takes off reserving r's arrival slot
-    # for next turn; D2 cannot reserve it and waits until D1 has left r.
+    # 'r' holds one drone at a time, but drones pipeline: D2 takes off the
+    # turn D1 lands, and lands 'r' the turn D1 leaves it. One drone enters
+    # 'r' per turn, not one every two turns.
     assert lines == [
         "D1-start-r",
-        "D1-r",
-        "D1-goal D2-start-r",
-        "D2-r",
+        "D1-r D2-start-r",
+        "D1-goal D2-r",
         "D2-goal"
     ]
 
