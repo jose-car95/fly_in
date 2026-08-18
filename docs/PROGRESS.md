@@ -5,15 +5,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 ## Estado actual
 
-- Milestone: **M5 en progreso** (M0–M4 cerrados). Benchmarks + optimización.
-- Último slice completado: M5.4 — retirada del multi-camino. Borrados `CandidatePaths` +
-  su test y revertido el parámetro `penalties` de `Dijkstra` (era código muerto: el bonus se
-  logró single-path con M5.3). El motor, el validador y el benchmark no se tocan; challenger
-  sigue en 43. Limpieza pura (deleción).
-- Anteriores (breve): M5.3 pipeline restricted a 1/turno (`_free_slots` no cuenta al dron en
-  vuelo) → **challenger 67 → 43 (bonus <45)**, circular_loop 15→10, 10 mapas válidos; el motor
-  quedó OPTIMISTA (caveat: en un mapa patológico podría dar salida inválida sin reintento) ·
-  M5.2 `CandidatePaths` (retirado en M5.4) · M5.1 benchmark harness
+- Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
+  bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
+- Último slice completado: M5.5 — red de seguridad optimista→conservador. `Simulator.run()`
+  simula en modo OPTIMISTA (rápido, restricted 1/turno), pasa la salida por el
+  `ScheduleValidator` (juez independiente) y, si fuera inválida, cae al modo CONSERVADOR
+  (reserva estricta, siempre válido). Flag `self._optimistic` que consulta `_free_slots`;
+  bucle extraído a `_simulate(route, optimistic)`. Verificado a fuerza bruta: de 7480
+  cadenas, el optimista fallaba 738; **con fallback, 0 inválidos**. Challenger sigue en 43
+  (el fallback no se dispara). Los 738 fallos eran mapas LINEALES (un solo camino) → el
+  multi-camino no aplica ahí; la corrección debe venir de la reserva (por eso el fallback).
+- Anteriores (breve): M5.4 retirada del multi-camino (código muerto) · M5.3 pipeline restricted
+  a 1/turno → **challenger 67 → 43 (bonus <45)**, circular_loop 15→10 · M5.2 `CandidatePaths`
+  (retirado) · M5.1 benchmark harness
 - Contexto (medir antes de optimizar): la línea base (M5.1) mostró que los 9 obligatorios ya
   cumplen objetivo; el único por encima es el challenger (67 vs 45). Es el bonus
   (100→125 pts, +25), y por eso Jose decidió PERSEGUIR multi-camino (2026-08-18) para bajar
@@ -39,13 +43,13 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
   `UnsolvableMapError`) · M2 grafo + Dijkstra `(turnos,−nº_priority)` + complejidad
   documentada · M1 parser completo (`MapParseError`) · M0 entorno/CI. Detalle en el
   registro de sesiones y en la tabla de decisiones.
-- Verificado con comandos: `pytest` (75 passed), `flake8 .` (limpio, límite 79),
+- Verificado con comandos: `pytest` (76 passed), `flake8 .` (limpio, límite 79),
   `mypy .` con los flags de `make lint` (sin errores, 42 ficheros). `make lint`,
-  `make test` y `make bench` en verde (challenger 43).
-- Siguiente paso: **red de seguridad** para el motor optimista. El solver valida su propia
-  salida y, si fuera inválida (un mapa patológico que atasque una restricted), reintenta en
-  modo conservador (la reserva estricta previa a M5.3). Así: rápido en los mapas que fluyen,
-  y demostrablemente correcto en cualquiera. Recupera la garantía sin perder el bonus.
+  `make test` y `make bench` en verde (challenger 43). Batería de 7480 cadenas: 0 inválidos.
+- Siguiente paso: **M6** (presentación y endurecimiento): README con secciones obligatorias
+  + ejemplo de entrada y salida esperada (requisito v1.6); modo visual de terminal coloreado
+  sin tocar el stdout por defecto; `docs/EVALUATION.md` por ítem; ensayo del live coding
+  `--capacity-info`; casos límite y ejecución desde clon limpio.
 - Contexto histórico (Jose, 2026-08-18): PERSEGUIR multi-camino. Motivo: el
   challenger es el bonus (100→125 pts, +25). Aunque no aporta al listón obligatorio, sí a la
   nota máxima. Objetivo: bajar `the_impossible_dream` de 67 a <45 turnos repartiendo drones
@@ -182,3 +186,4 @@ actual de `gh` sí lo tiene):
 | 2026-08-18 | Slice M5.2 (épica #19): `CandidatePaths` (Dijkstra con `penalties` opcional + penalización de zonas intermedias); halla varias rutas que divergen en el medio y comparten embudos; verificado que encuentra las 3 cadenas paralelas del challenger; 2 tests | pytest 77 passed, lint/type en verde |
 | 2026-08-18 | Slice M5.3 (épica #19): pipeline restricted a 1/turno (`_free_slots` no cuenta al dron en vuelo). CHALLENGER 67→43 (bonus conseguido, single-path); circular_loop 15→10; 10 mapas siguen válidos. Motor ahora optimista (caveat); red de seguridad pendiente. Analizado el repo de mario-asenjo para entender la técnica | pytest 77 passed, lint/type en verde |
 | 2026-08-18 | Slice M5.4 (épica #19): retirada del multi-camino (borrado `CandidatePaths`+test, revertido `penalties` de Dijkstra); código muerto tras lograr el bonus single-path. Sin tocar motor/validador/benchmark; challenger sigue en 43 | pytest 75 passed, lint/type en verde |
+| 2026-08-18 | Slice M5.5 (épica #19): red de seguridad optimista→conservador en `Simulator.run()` (valida su salida con el juez y cae a reserva estricta si es inválida). Batería 7480: optimista 738 fallos → con fallback 0. Challenger sigue 43. Cierra M5 (bonus + motor siempre válido) | pytest 76 passed, lint/type en verde |

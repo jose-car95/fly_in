@@ -135,6 +135,30 @@ def test_two_drones_pipeline_through_a_restricted_zone() -> None:
     ]
 
 
+def test_falls_back_to_a_valid_schedule_when_optimism_overfills() -> None:
+    # A restricted capacity-2 zone fed by a capacity-2 link lets the
+    # optimistic pass commit more drones than can drain, overfilling 'z0'.
+    # The engine must fall back to a schedule the validator accepts.
+    zones = {
+        "start": Zone("start", 0, 0, is_start=True),
+        "z0": Zone(
+            "z0", 1, 0, zone_type=ZoneType.RESTRICTED, max_drones=2
+        ),
+        "z1": Zone("z1", 2, 0),
+        "goal": Zone("goal", 3, 0, is_end=True)
+    }
+    connections = [
+        Connection("start", "z0", 2),
+        Connection("z0", "z1", 2),
+        Connection("z1", "goal", 2)
+    ]
+    fly_in_map = _map(zones, connections, nb_drones=4)
+
+    lines = Simulator(fly_in_map).run()
+
+    ScheduleValidator(fly_in_map, lines).validate()
+
+
 def test_engine_output_passes_the_independent_validator() -> None:
     zones = {
         "start": Zone("start", 0, 0, is_start=True),

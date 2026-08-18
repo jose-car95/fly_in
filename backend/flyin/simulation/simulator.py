@@ -4,8 +4,9 @@ from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import ZoneType
 from flyin.graph.graph import Graph
 from flyin.pathfinding.dijkstra import Dijkstra
-from flyin.shared.exceptions import UnsolvableMapError
+from flyin.shared.exceptions import InvalidScheduleError, UnsolvableMapError
 from flyin.simulation.drone import Drone
+from flyin.simulation.schedule_validator import ScheduleValidator
 
 
 class Simulator:
@@ -17,11 +18,19 @@ class Simulator:
     output never depends on the order in which the drones are iterated: a
     zone admits a newcomer only if it has room once this turn's leavers have
     freed their slots. Normal/priority zones cost one turn; a restricted zone
-    costs two (in-flight token, then arrival). Splitting drones across several
-    paths and link-capacity limits arrive in later slices.
+    costs two (in-flight token, then arrival), and each zone and connection is
+    held to its capacity.
+
+    A fast optimistic pass pipelines restricted zones one drone per turn; on
+    the rare map where that would overfill a restricted zone, the schedule is
+    rejected by the independent validator and a conservative pass (which
+    reserves a restricted zone across the whole transit) is used instead. The
+    result is fast where it can be and always valid: a valid slow schedule
+    beats an invalid fast one.
 
     Attributes:
         _map: The parsed map to simulate.
+        _optimistic: Whether the current pass pipelines restricted zones.
     """
 
     def __init__(self, fly_in_map: FlyInMap) -> None:
@@ -31,9 +40,14 @@ class Simulator:
             fly_in_map: The parsed map whose drones will be routed.
         """
         self._map = fly_in_map
+        self._optimistic = True
 
     def run(self) -> list[str]:
         """Simulate the drones and return the output, one line per turn.
+
+        Runs the fast optimistic pass first; if its schedule is illegal (a
+        restricted zone would overfill), falls back to the conservative pass,
+        which is always valid.
 
         Returns:
             The movement lines, each a space-separated set of movement tokens
@@ -47,6 +61,24 @@ class Simulator:
             UnsolvableMapError: If the start cannot reach the end.
         """
         route = self._shortest_route()
+        optimistic = self._simulate(route, optimistic=True)
+        if self._is_valid(optimistic):
+            return optimistic
+        return self._simulate(route, optimistic=False)
+
+    def _simulate(
+        self, route: tuple[str, ...], optimistic: bool
+    ) -> list[str]:
+        """Run one full pass over the route and return its movement lines.
+
+        Args:
+            route: The shared cheapest route every drone follows.
+            optimistic: Whether restricted zones pipeline one drone per turn.
+
+        Returns:
+            The movement lines produced by this pass.
+        """
+        self._optimistic = optimistic
         drones = [
             Drone(i, route)
             for i in range(1, self._map.nb_drones + 1)
@@ -56,11 +88,19 @@ class Simulator:
             tokens = self._play_turn(drones)
             if not tokens:
                 # No drone could move: a deadlock. Detecting and reporting
-                # deadlocks is a later slice (M4.7); here we stop rather than
-                # loop forever.
+                # deadlocks is a later slice; here we stop rather than loop
+                # forever.
                 break
             lines.append(" ".join(tokens))
         return lines
+
+    def _is_valid(self, lines: list[str]) -> bool:
+        """Whether the independent validator accepts these movement lines."""
+        try:
+            ScheduleValidator(self._map, lines).validate()
+        except InvalidScheduleError:
+            return False
+        return True
 
     def _shortest_route(self) -> tuple[str, ...]:
         """Return the cheapest start-to-end route, or fail if unreachable.
@@ -130,12 +170,13 @@ class Simulator:
     def _free_slots(self, active: list[Drone]) -> dict[str, float]:
         """Room left in each zone before this turn's exits are applied.
 
-        Only parked drones count against a zone. An in-flight drone does not
-        hold its restricted destination across the whole transit, so a
-        follower can take off toward that zone the same turn the current
-        occupant leaves it: restricted zones pipeline one drone per turn
-        instead of one every two. The occupant is expected to keep flowing;
-        the independent validator confirms no zone is ever over capacity.
+        Parked drones always count against their zone. In the optimistic pass
+        an in-flight drone does not hold its restricted destination, so a
+        follower can take off toward that zone the same turn the occupant
+        leaves it: restricted zones pipeline one drone per turn. In the
+        conservative pass an in-flight drone keeps its destination reserved
+        across the whole transit, which is always valid but pipelines one
+        drone every two turns.
 
         Args:
             active: The drones still in play (parked or in flight).
@@ -147,6 +188,8 @@ class Simulator:
         for drone in active:
             if drone.is_at_zone:
                 free[drone.current_zone] -= 1
+            elif not self._optimistic:
+                free[drone.next_zone] -= 1
         return free
 
     def _link_slots(self) -> dict[frozenset[str], int]:
