@@ -28,8 +28,8 @@ Solo marcar `EVIDENCED` con un test, comando, fichero o demo concreta.
 | Gestión de errores | Mensajes claros para inválido/desconexo | Tests CLI | NOT_STARTED |
 | Calidad de código | Estructura, docs, estilo, visual integrado | Review + lint | NOT_STARTED |
 | Live coding | Añadir `--capacity-info` en ≤10 min | Registro de ensayo | NOT_STARTED |
-| Bonus rendimiento | Igualar/batir TODOS los objetivos individuales | Evidencia de benchmarks | NOT_STARTED |
-| Challenger | Impossible Dream en ≤44 turnos | Benchmark opcional | NOT_STARTED |
+| Bonus rendimiento | Igualar/batir TODOS los objetivos individuales | `make bench`: los 10 mapas por debajo de su objetivo | EVIDENCED |
+| Challenger | Impossible Dream en ≤44 turnos | `make bench`: 43 turnos, válido (pipeline restricted a 1/turno) | EVIDENCED |
 
 ## Costura de live coding (`--capacity-info`)
 
@@ -60,12 +60,12 @@ Línea base (motor de un solo camino, `make bench`), 2026-08-18:
 | maps/easy/02_simple_fork.txt | 4 | ≤8 | 6 | sí | 2026-08-18 (baseline) |
 | maps/easy/03_basic_capacity.txt | 4 | ≤6 | 4 | sí | 2026-08-18 (baseline) |
 | maps/medium/01_dead_end_trap.txt | 5 | ≤12 | 8 | sí | 2026-08-18 (baseline) |
-| maps/medium/02_circular_loop.txt | 6 | ≤15 | 15 | sí | 2026-08-18 (baseline) |
+| maps/medium/02_circular_loop.txt | 6 | ≤15 | 10 | sí | 2026-08-18 (M5.3) |
 | maps/medium/03_priority_puzzle.txt | 5 | ≤12 | 8 | sí | 2026-08-18 (baseline) |
 | maps/hard/01_maze_nightmare.txt | 8 | ≤30 | 13 | sí | 2026-08-18 (baseline) |
 | maps/hard/02_capacity_hell.txt | 12 | ≤35 | 16 | sí | 2026-08-18 (baseline) |
 | maps/hard/03_ultimate_challenge.txt | 15 | ≤45 | 26 | sí | 2026-08-18 (baseline) |
-| maps/challenger/01_the_impossible_dream.txt | 25 | <45 (opcional) | 67 | sí | 2026-08-18 (baseline) |
+| maps/challenger/01_the_impossible_dream.txt | 25 | <45 (opcional) | 43 | sí | 2026-08-18 (M5.3) |
 
 Lectura: los 9 mapas obligatorios (easy/medium/hard) ya cumplen su objetivo con
 el motor de un solo camino (8 por debajo, `circular_loop` justo en 15). El único
