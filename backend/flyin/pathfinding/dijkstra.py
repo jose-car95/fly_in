@@ -25,34 +25,20 @@ class Dijkstra:
     ``heapq`` supplies the priority queue (a plain data structure); the
     algorithm itself is written here, no graph/pathfinding library involved.
 
-    An optional per-zone ``penalties`` map adds extra cost to entering named
-    zones. It only biases the search toward avoiding them (used to find
-    diverging candidate paths); it is not a real move cost, so a penalized
-    run's reported ``Path.cost`` is inflated accordingly.
-
     Attributes:
         _graph: The traversable adjacency (blocked zones already excluded).
         _map: The parsed map, read for each zone's move cost and the endpoints.
-        _penalties: Extra search cost per zone name (empty for a plain run).
     """
 
-    def __init__(
-        self,
-        graph: Graph,
-        fly_in_map: FlyInMap,
-        penalties: dict[str, int] | None = None
-    ) -> None:
+    def __init__(self, graph: Graph, fly_in_map: FlyInMap) -> None:
         """Store the graph and map to search over.
 
         Args:
             graph: The traversable adjacency to walk.
             fly_in_map: The parsed map, for move costs and start/end zones.
-            penalties: Optional extra search cost per zone name, to bias the
-                search away from already-used zones.
         """
         self._graph = graph
         self._map = fly_in_map
-        self._penalties = penalties or {}
 
     def shortest_path(self) -> Path | None:
         """Return the cheapest route from start to end.
@@ -84,9 +70,6 @@ class Dijkstra:
                 if step is None:
                     # A blocked zone is impassable; never step into it.
                     continue
-                # A penalty biases the search away from an already-used zone
-                # without removing it, so a forced funnel is still reusable.
-                step += self._penalties.get(neighbor, 0)
                 priority_bonus = 1 if zone_type is ZoneType.PRIORITY else 0
                 key = (turns + step, neg_priority - priority_bonus)
                 if neighbor not in best or key < best[neighbor]:
