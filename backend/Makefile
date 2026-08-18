@@ -1,10 +1,13 @@
-.PHONY: install run debug clean fclean re lint lint-strict type test quality
+.PHONY: install run debug bench clean fclean re lint lint-strict type test quality
 
 install:
 	uv sync
 
 run:
 	uv run python main.py $(ARGS)
+
+bench:
+	uv run python -m flyin.benchmark
 
 debug:
 	uv run python -m pdb main.py $(ARGS)

@@ -1,4 +1,4 @@
-.PHONY: install run lint lint-strict type test quality clean fclean re
+.PHONY: install run bench lint lint-strict type test quality clean fclean re
 
 ROOT_CACHES := .mypy_cache .pytest_cache .coverage htmlcov
 
@@ -7,6 +7,9 @@ install:
 
 run:
 	$(MAKE) -C backend run ARGS="$(ARGS)"
+
+bench:
+	$(MAKE) -C backend bench
 
 lint:
 	$(MAKE) -C backend lint
