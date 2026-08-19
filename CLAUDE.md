@@ -140,7 +140,7 @@ el Python vive en `backend/` con su propio `pyproject.toml`.
   backend`; `run` y `debug` usan `--project backend` para que las rutas de mapas se
   resuelvan desde la raíz (`make run ARGS=maps/easy/01_linear_path.txt`). Lleva las
   reglas que el subject III.2 exige literalmente: `install`, `run`, `debug` (pdb),
-  `clean`, `lint` y `lint-strict`. **Los flags de mypy van explícitos en `MYPY_FLAGS`
+  `clean`, `lint` y `lint-strict`, más `run-visual` (atajo de `run --visual`). **Los flags de mypy van explícitos en `MYPY_FLAGS`
   dentro del Makefile, no en `pyproject.toml`**: el subject los enumera uno a uno y el
   evaluador los busca ahí. No hay Makefile en `backend/`; cuando nazca `frontend/`,
   este lo cubrirá.

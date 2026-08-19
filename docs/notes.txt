@@ -37,3 +37,8 @@ fly_in/
       ├── graph/, pathfinding/
       ├── scheduling/, simulation/
       └── cli/
+
+
+
+uv run --project backend python -m flyin maps/easy/02_simple_fork.txt
+uv run --project backend python -m flyin --visual maps/easy/02_simple_fork.txt

@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+from flyin.domain.fly_in_map import FlyInMap
+
 
 @dataclass(frozen=True)
 class SolveResult:
@@ -14,9 +16,12 @@ class SolveResult:
 
     Attributes:
         movement_lines: The exact per-turn output lines (``D<ID>-<zone>``).
+        fly_in_map: The map that was solved, carried so an adapter can render
+            it (zone types, capacities and colors) without parsing it again.
         warnings: Non-fatal messages to surface off stdout; empty when the map
             had nothing worth flagging.
     """
 
     movement_lines: list[str]
+    fly_in_map: FlyInMap
     warnings: list[str] = field(default_factory=list)
