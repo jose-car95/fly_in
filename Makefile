@@ -1,5 +1,5 @@
-.PHONY: install run debug bench lint lint-strict test quality clean \
-        fclean re
+.PHONY: install run run-visual debug bench lint lint-strict test quality \
+        clean fclean re
 
 BACKEND := backend
 UV := uv run --directory $(BACKEND)
@@ -12,6 +12,9 @@ install:
 
 run:
 	uv run --project $(BACKEND) python -m flyin $(ARGS)
+
+run-visual:
+	uv run --project $(BACKEND) python -m flyin --visual $(ARGS)
 
 debug:
 	uv run --project $(BACKEND) python -m pdb -m flyin $(ARGS)

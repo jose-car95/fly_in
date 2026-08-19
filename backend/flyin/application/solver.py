@@ -35,7 +35,9 @@ class FlyinSolver:
         warnings = self._normalize_terminals(fly_in_map)
         movement_lines = Simulator(fly_in_map).run()
         return SolveResult(
-            movement_lines=movement_lines, warnings=warnings
+            movement_lines=movement_lines,
+            fly_in_map=fly_in_map,
+            warnings=warnings
         )
 
     @staticmethod

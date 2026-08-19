@@ -15,7 +15,7 @@ Solo marcar `EVIDENCED` con un test, comando, fichero o demo concreta.
 | Ocupación de zonas | Capacidad defecto/explícita, terminales ilimitados, liberación mismo turno | `test_simulator` (cola, cap>1) + `test_schedule_validator` (ocupación) + `test_official_maps` | EVIDENCED |
 | Costes de movimiento | normal/priority 1, restricted 2, blocked inaccesible | `test_zone` (move_cost) + `test_simulator` (restricted 2 turnos) | EVIDENCED |
 | Capacidad de enlace | Defecto/explícita, simultaneidad | `test_simulator` (throttle) + `test_schedule_validator` (cruces) | EVIDENCED |
-| Visualización | Posiciones/movimientos/colores/capacidad claros | Demo de terminal | NOT_STARTED |
+| Visualización | Posiciones/movimientos/colores/capacidad claros | `make run ARGS="--visual <mapa>"`: estado por zona (tipo, capacidad, xy, color) + turnos, todo coloreado; `tests/adapters/cli/test_visual.py` | EVIDENCED |
 | Escenarios básicos | 1 dron, varios drones, mapas provistos, formato, omisión de parados (≥4/5) | `test_official_maps` (10 mapas) + `tests/adapters/cli` + cola | EVIDENCED |
 | Terminación | Parar exactamente al entregar todos | `test_official_maps` (terminan) + `test_simulator` | EVIDENCED |
 | Caminos válidos | Lineal, múltiple, cuellos de botella, tipos | `test_official_maps` (validador acepta los 10) | EVIDENCED |

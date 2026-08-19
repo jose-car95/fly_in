@@ -181,3 +181,52 @@ def test_catalog_is_readable_and_separated(tmp_path: Path) -> None:
     assert out.startswith("\nAvailable maps:\n\n")
     # A blank line keeps the simulation from starting glued to the answer.
     assert out.endswith(f"{prompt}\nD1-a\nD1-goal\n")
+
+
+def test_visual_flag_paints_the_simulation(tmp_path: Path) -> None:
+    map_file = tmp_path / "m.txt"
+    map_file.write_text(
+        "nb_drones: 1\n"
+        "start_hub: start 0 0 [color=green]\n"
+        "hub: a 1 0 [color=yellow]\n"
+        "end_hub: goal 2 0 [color=red]\n"
+        "connection: start-a\n"
+        "connection: a-goal\n"
+    )
+
+    code, out, err = _run(["--visual", str(map_file)])
+
+    assert code == 0
+    assert "Fly-In simulation" in out
+    assert "Turn 1: D1-\033[33ma\033[0m" in out
+    assert err == ""
+
+
+def test_visual_flag_order_does_not_matter(tmp_path: Path) -> None:
+    map_file = tmp_path / "m.txt"
+    map_file.write_text(_LINEAR_MAP)
+
+    after = _run([str(map_file), "--visual"])
+    before = _run(["--visual", str(map_file)])
+
+    assert after == before
+
+
+def test_without_the_flag_stdout_is_untouched(tmp_path: Path) -> None:
+    map_file = tmp_path / "m.txt"
+    map_file.write_text(_LINEAR_MAP)
+
+    code, out, err = _run([str(map_file)])
+
+    # The evaluator's output must stay byte-exact and free of escape codes.
+    assert code == 0
+    assert out == "D1-a\nD1-goal\n"
+    assert "\033[" not in out
+
+
+def test_unknown_flag_is_a_usage_error(tmp_path: Path) -> None:
+    code, out, err = _run(["--nope", str(tmp_path / "m.txt")])
+
+    assert code == 2
+    assert out == ""
+    assert "usage" in err

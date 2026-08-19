@@ -3,7 +3,8 @@
 from pathlib import Path
 from typing import TextIO
 
-from flyin.adapters.cli.arguments import map_file_argument
+from flyin.adapters.cli.arguments import CliArguments
+from flyin.adapters.cli.visual import VisualRenderer
 from flyin.adapters.map_catalog import MapCatalog
 from flyin.application.solver import FlyinSolver
 from flyin.shared.exceptions import MapParseError, UnsolvableMapError
@@ -51,20 +52,21 @@ class Cli:
 
         Args:
             argv: Command-line arguments without the program name; at most one
-                map file path is expected. Naming none offers the catalog.
+                map file path and an optional ``--visual`` flag are expected.
+                Naming no map file offers the catalog.
 
         Returns:
             0 on success, 2 on a usage or selection error, 1 on a read, parse
             or route failure.
         """
-        if len(argv) > 1:
-            self._err.write("usage: flyin [map_file]\n")
+        arguments = CliArguments.parse(argv)
+        if arguments is None:
+            self._err.write("usage: flyin [--visual] [map_file]\n")
             return 2
-        # With more than one argument already refused, a missing path can only
-        # mean an empty argv, so the human gets asked which map to run. Tested
-        # against None, not truthiness: an empty path is a read error to
-        # report, not a reason to open the catalog.
-        map_file = map_file_argument(argv)
+        # Naming no map file is not an error: the human gets offered the
+        # catalog. Tested against None, not truthiness, since an empty path is
+        # a read error to report rather than a reason to open the catalog.
+        map_file = arguments.map_file
         if map_file is None:
             map_file = self._selected_map()
         if map_file is None:
@@ -81,7 +83,14 @@ class Cli:
             return 1
         for warning in result.warnings:
             self._err.write(f"{warning}\n")
-        for line in result.movement_lines:
+        # The colored view replaces the exact lines instead of joining them:
+        # mixing both would break the output format the subject fixes.
+        lines = (
+            VisualRenderer(result.fly_in_map).render(result.movement_lines)
+            if arguments.visual
+            else result.movement_lines
+        )
+        for line in lines:
             self._out.write(f"{line}\n")
         return 0
 
