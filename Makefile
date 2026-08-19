@@ -1,37 +1,35 @@
-.PHONY: install run bench lint lint-strict type test quality clean fclean re
+.PHONY: install run bench lint lint-strict test quality clean fclean re
 
-ROOT_CACHES := .mypy_cache .pytest_cache .coverage htmlcov
+BACKEND := backend
+UV := uv run --directory $(BACKEND)
 
 install:
-	$(MAKE) -C backend install
+	uv sync --directory $(BACKEND)
 
 run:
-	$(MAKE) -C backend run ARGS="$(ARGS)"
+	uv run --project $(BACKEND) python -m flyin $(ARGS)
 
 bench:
-	$(MAKE) -C backend bench
+	$(UV) python -m flyin.benchmark
 
 lint:
-	$(MAKE) -C backend lint
+	$(UV) flake8 .
+	$(UV) mypy .
 
 lint-strict:
-	$(MAKE) -C backend lint-strict
-
-type:
-	$(MAKE) -C backend type
+	$(UV) flake8 .
+	$(UV) mypy . --strict
 
 test:
-	$(MAKE) -C backend test
+	$(UV) pytest
 
-quality:
-	$(MAKE) -C backend quality
+quality: lint test
 
 clean:
-	$(MAKE) -C backend clean
-	rm -rf $(ROOT_CACHES)
+	find $(BACKEND)/flyin $(BACKEND)/tests -name __pycache__ -exec rm -rf {} +
+	rm -rf $(BACKEND)/.mypy_cache $(BACKEND)/.pytest_cache
 
-fclean:
-	$(MAKE) -C backend fclean
-	rm -rf $(ROOT_CACHES) .venv
+fclean: clean
+	rm -rf $(BACKEND)/.venv
 
 re: fclean install

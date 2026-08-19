@@ -68,8 +68,9 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 
 ## Reglas de producto no negociables
 
-- Python ≥3.10, completamente orientado a objetos y type-safe. `mypy .` y `flake8 .` deben
-  pasar sin errores (gates obligatorios antes de dar un slice por terminado).
+- Python ≥3.10, completamente orientado a objetos y type-safe. `make lint` (flake8 +
+  mypy) y `make test` deben pasar sin errores (gates obligatorios antes de dar un slice
+  por terminado).
 - **Límite de 79 caracteres por línea (norma de 42), sin excepciones.** Ninguna línea del
   código Python del proyecto puede pasar de 79 caracteres (docstrings y comentarios
   incluidos). Es una regla dura, no una preferencia de estilo: `flake8` lo aplica con
@@ -128,14 +129,18 @@ propósito. Las zonas grises del subject y su interpretación están en `docs/SP
 
 ## Arquitectura (proyecto obligatorio)
 
-Layout del repo (split decidido 2026-07-26, ver `docs/PROGRESS.md`): la raíz solo
-coordina; cada subproyecto se autogobierna con su propio toolchain.
+Layout del repo (split físico `backend/`+`frontend/` decidido 2026-07-26; Makefile
+único en la raíz decidido 2026-08-18, ver `docs/PROGRESS.md`): la raíz orquesta;
+el Python vive en `backend/` con su propio `pyproject.toml`.
 
 - `backend/` — todo el Python (paquete `flyin`, `tests/`, `pyproject.toml`,
-  `Makefile` trabajador, `.flake8`). Es el corazón: aquí vive el motor de simulación.
+  `.flake8`). Es el corazón: aquí vive el motor de simulación.
 - `frontend/` — reservada para la futura UI React. Hoy solo un README-puerta; sin código.
-- `Makefile` (raíz) — orquestador fino: delega en `backend/` (y en `frontend/` cuando
-  nazca). No conoce `uv`/`npm` por dentro. `make test` desde la raíz reenvía a `backend`.
+- `Makefile` (raíz, ÚNICO) — orquesta todo alcanzando `backend/` con `uv --directory
+  backend`; `run` usa `--project backend` para que las rutas de mapas se resuelvan desde
+  la raíz (`make run ARGS=maps/easy/01_linear_path.txt`). Sin comentarios ni variables
+  de entorno: la configuración de las herramientas vive en `backend/pyproject.toml` y
+  `backend/.flake8`. No hay Makefile en `backend/`; cuando nazca `frontend/`, este lo cubrirá.
 - `docs/`, `maps/`, `scripts/`, `.github/` — a nivel de repo, compartidos.
 
 Módulos del backend, con dependencias hacia dentro, sin frameworks en el dominio:
@@ -160,7 +165,7 @@ carpeta en `docs/PROGRESS.md`. No añadas base de datos, Docker ni eventos sin d
 1. Define UN comportamiento observable y sus ejemplos de aceptación.
 2. Escribe el test mínimo que falla.
 3. Implementa lo mínimo para que pase.
-4. Ejecuta el test, luego `make lint`, `make type`, `make test`.
+4. Ejecuta el test, luego `make lint` (flake8 + mypy) y `make test`.
 5. Explica a Jose el flujo, las clases implicadas y el trade-off clave (breve, en español).
 6. Actualiza `docs/PROGRESS.md`.
 7. Para en el límite del slice aprobado. Nunca generes una fase entera de golpe.
