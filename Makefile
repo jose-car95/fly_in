@@ -1,7 +1,11 @@
-.PHONY: install run bench lint lint-strict test quality clean fclean re
+.PHONY: install run debug bench lint lint-strict test quality clean \
+        fclean re
 
 BACKEND := backend
 UV := uv run --directory $(BACKEND)
+MYPY_FLAGS := --warn-return-any --warn-unused-ignores \
+              --ignore-missing-imports --disallow-untyped-defs \
+              --check-untyped-defs
 
 install:
 	uv sync --directory $(BACKEND)
@@ -9,12 +13,15 @@ install:
 run:
 	uv run --project $(BACKEND) python -m flyin $(ARGS)
 
+debug:
+	uv run --project $(BACKEND) python -m pdb -m flyin $(ARGS)
+
 bench:
 	$(UV) python -m flyin.benchmark
 
 lint:
 	$(UV) flake8 .
-	$(UV) mypy .
+	$(UV) mypy . $(MYPY_FLAGS)
 
 lint-strict:
 	$(UV) flake8 .
