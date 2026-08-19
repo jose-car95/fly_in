@@ -7,7 +7,15 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: M5.5 — red de seguridad optimista→conservador. `Simulator.run()`
+- Último slice completado: catálogo de mapas (Slice A) — nace
+  `flyin/adapters/map_catalog.py` con `MapCatalog`/`MapFileOption`: lista numerada y
+  determinista de los `.txt` bajo `maps/`. `Cli` sin argumentos ofrece esa lista por
+  stdout y resuelve el número tecleado; con argumento se comporta exactamente igual que
+  antes (camino del evaluador intacto, verificado byte a byte con `od -c`). `Cli` recibe
+  ahora `in_` y `catalog` inyectados. Vive junto a los adaptadores, no dentro de `cli/`,
+  porque la futura API necesita el MISMO catálogo (`GET /maps`). El `launcher` cli/api
+  se pospone hasta que exista `adapters/api/` (hoy despacharía a un solo destino).
+- Anterior: M5.5 — red de seguridad optimista→conservador. `Simulator.run()`
   simula en modo OPTIMISTA (rápido, restricted 1/turno), pasa la salida por el
   `ScheduleValidator` (juez independiente) y, si fuera inválida, cae al modo CONSERVADOR
   (reserva estricta, siempre válido). Flag `self._optimistic` que consulta `_free_slots`;
@@ -67,6 +75,8 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 | — | Priority = desempate lexicográfico a coste igual | Ver SPEC_NOTES §3 |
 | 2026-07-26 | Split `backend/` + `frontend/` con Makefile orquestador en la raíz | Objetivo de aprendizaje decidido (infra completa backend+frontend); mover cuesta menos con el repo pequeño y solo crece con el tiempo |
 | 2026-08-18 | Makefile ÚNICO en la raíz; se borra `backend/Makefile`. Alcanza el backend con `uv --directory backend` (dev) y `PYTHONPATH=backend uv run --project backend` (run) | El de dos niveles tenía `run`/`debug` rotos (apuntaban a `main.py` inexistente; el CLI es `python -m flyin`). Decisión de Jose: un solo punto de orquestación, más simple de entender y mantener. La CI llama `make install/lint/test` desde la raíz → sigue funcionando |
+| 2026-08-19 | Slice A (catálogo de mapas): nace `flyin/adapters/map_catalog.py` (`MapCatalog` + `MapFileOption`, 1-based, orden estable, `official()` sube buscando `maps/` en vez de contar niveles). `Cli` sin argumentos lista los mapas por stdout y lee el número; `in_` y `catalog` inyectados. Inspirado en el repo de mario-asenjo, donde el MISMO catálogo alimenta el CLI y `GET /maps` de la API | pytest 87 passed (+11), lint en verde; `make run` sin ARGS verificado en pty real. Prompt `Type the number of the map to run: ` con `flush()` explícito (sin `\n` final, un stdout line-buffered lo retenía y salía DESPUÉS de teclear, pegado al primer turno); números alineados a la derecha y líneas en blanco de separación; test de regresión que falla si se quita el `flush` |
+| 2026-08-19 | El menú de selección vive en el adaptador CLI (no en el Makefile ni en un script de shell), y el catálogo como hermano de los adaptadores, no dentro de `cli/`. El `launcher` cli/api se pospone a cuando nazca `adapters/api/` | Decisión de Jose: el catálogo se muestra por stdout (es lo que el humano pidió); stderr queda solo para errores. El evaluador siempre nombra su mapa, así que nunca entra por esa rama y su stdout no se contamina. Con el menú dentro del CLI, el Makefile no se toca y el menú funciona también sin `make`. Un `launcher` hoy despacharía a un único adaptador y no podría importar `api.runner` |
 | 2026-08-19 | Makefile limpiado: fuera el hack `MAKECMDGOALS`+`$(eval)`, el `PYTHONPATH` y todos los comentarios; desaparece el target `type` (`lint` ya hace flake8+mypy). Los flags de mypy pasan a `[tool.mypy]` en `backend/pyproject.toml`; `flyin` pasa a paquete instalable (`[build-system]` hatchling, fuera `package = false`) | El Makefile es la primera cosa que lee un evaluador: 54 líneas con magia de make → 35 sin una sola construcción que haya que explicar. La config de herramientas vive donde la busca cualquiera (pyproject), no en el Makefile. Instalable = `python -m flyin` importa sin variables de entorno. CI sin cambios |
 | 2026-07-26 | API (FastAPI) + UI (React) confirmadas como extensión post-mandatory | Aprender REST/frontend de verdad; se hacen DESPUÉS del CLI obligatorio (mandatory-first de 42) |
 | 2026-07-26 | Full-OOP: el comportamiento va en clases, no en funciones sueltas. Parser → clase `MapParser` (hecho) | El subject exige OOP explícito; funciones de módulo con estado son un riesgo en el peer review. Regla fina en `CLAUDE.md` |

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TextIO
 
 from flyin.adapters.cli.arguments import map_file_argument
+from flyin.adapters.map_catalog import MapCatalog
 from flyin.application.solver import FlyinSolver
 from flyin.shared.exceptions import MapParseError, UnsolvableMapError
 
@@ -20,32 +21,53 @@ class Cli:
     Attributes:
         _out: Stream for the movement lines (stdout).
         _err: Stream for error messages, kept off stdout (stderr).
+        _in: Stream a human types the map selection into (stdin).
+        _catalog: The maps offered when no map file was named.
     """
 
-    def __init__(self, out: TextIO, err: TextIO) -> None:
-        """Store the output and error streams to write to.
+    def __init__(
+        self,
+        out: TextIO,
+        err: TextIO,
+        in_: TextIO,
+        catalog: MapCatalog
+    ) -> None:
+        """Store the streams and the catalog to work with.
 
         Args:
             out: Where the exact per-turn movement lines are written.
             err: Where clear error messages are written, off stdout.
+            in_: Where the map selection is read from when none was given.
+            catalog: Maps offered for selection; injected so a caller (or a
+                test) decides which folder is on offer.
         """
         self._out = out
         self._err = err
+        self._in = in_
+        self._catalog = catalog
 
     def run(self, argv: list[str]) -> int:
         """Run the CLI over its arguments and return a process exit code.
 
         Args:
-            argv: Command-line arguments without the program name; exactly one
-                map file path is expected.
+            argv: Command-line arguments without the program name; at most one
+                map file path is expected. Naming none offers the catalog.
 
         Returns:
-            0 on success, 2 on a usage error, 1 on a read, parse or route
-            failure.
+            0 on success, 2 on a usage or selection error, 1 on a read, parse
+            or route failure.
         """
+        if len(argv) > 1:
+            self._err.write("usage: flyin [map_file]\n")
+            return 2
+        # With more than one argument already refused, a missing path can only
+        # mean an empty argv, so the human gets asked which map to run. Tested
+        # against None, not truthiness: an empty path is a read error to
+        # report, not a reason to open the catalog.
         map_file = map_file_argument(argv)
         if map_file is None:
-            self._err.write("usage: flyin <map_file>\n")
+            map_file = self._selected_map()
+        if map_file is None:
             return 2
         try:
             source_map = Path(map_file).read_text()
@@ -62,3 +84,47 @@ class Cli:
         for line in result.movement_lines:
             self._out.write(f"{line}\n")
         return 0
+
+    def _selected_map(self) -> str | None:
+        """Offer the known maps and read back the one a human picks.
+
+        The listing and the prompt are the answer to what was asked, so they
+        belong on stdout; only the refusals go to stderr. Nothing here can
+        reach the evaluator's output, which always names its map file.
+
+        Returns:
+            The path of the chosen map, or ``None`` when nothing valid was
+            selected, the reason already written to stderr.
+        """
+        options = self._catalog.available_maps()
+        if not options:
+            self._err.write(
+                f"no maps found under {self._catalog.root}\n"
+            )
+            return None
+        self._out.write("\nAvailable maps:\n\n")
+        # Right-align the numbers so a two-digit option keeps the dots in one
+        # column instead of shifting the whole list.
+        width = len(str(len(options)))
+        for option in options:
+            self._out.write(
+                f"  {option.index:>{width}}. {option.display_path}\n"
+            )
+        self._out.write("\nType the number of the map to run: ")
+        # The prompt has no trailing newline, so a line-buffered stdout would
+        # hold it back and only show it once the answer was already typed.
+        self._out.flush()
+        typed = self._in.readline().strip()
+        try:
+            index = int(typed)
+        except ValueError:
+            self._err.write(f"not a map number: {typed!r}\n")
+            return None
+        selected = self._catalog.option_for_index(index)
+        if selected is None:
+            self._err.write(f"no map numbered {index}\n")
+            return None
+        # Blank line so the simulation does not start glued to the answer the
+        # human just typed.
+        self._out.write("\n")
+        return str(selected.path)
