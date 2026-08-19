@@ -8,6 +8,7 @@ stay untouched and this view is only produced behind an explicit flag.
 
 from typing import Iterator
 
+from flyin.adapters.cli.metrics import RunMetrics
 from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import Zone
 
@@ -124,7 +125,28 @@ class VisualRenderer:
             f"  Turn {number}: {self._paint_movements(line)}"
             for number, line in enumerate(movement_lines, start=1)
         )
+        lines.extend(self._metrics_lines(movement_lines))
         return lines
+
+    def _metrics_lines(self, movement_lines: list[str]) -> list[str]:
+        """Return the summary figures block, labels aligned in a column.
+
+        Args:
+            movement_lines: The exact per-turn lines the engine produced.
+
+        Returns:
+            A blank line, a heading and one labelled figure per line.
+        """
+        stats = RunMetrics(movement_lines)
+        width = len("Drones/turn (avg):")
+        return [
+            "",
+            "Metrics:",
+            f"  {'Turns:'.ljust(width)} {stats.turns}",
+            f"  {'Total moves:'.ljust(width)} {stats.total_moves}",
+            f"  {'Drones/turn (avg):'.ljust(width)} "
+            f"{stats.drones_per_turn:.1f}"
+        ]
 
     def _zone_lines(self) -> list[str]:
         """Return one line per zone, in columns that line up.
