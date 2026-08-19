@@ -76,6 +76,18 @@ def test_turns_are_numbered_and_painted() -> None:
     )
 
 
+def test_view_appends_the_run_metrics() -> None:
+    rendered = "\n".join(
+        _render(["D1-junction", "D1-goal D2-junction", "D2-goal"])
+    )
+
+    assert "Metrics:" in rendered
+    assert "Turns:" in rendered and "3" in rendered
+    # Four tokens across the three turns.
+    assert "Total moves:" in rendered and "4" in rendered
+    assert "Drones/turn (avg):" in rendered and "1.3" in rendered
+
+
 def test_in_flight_token_paints_both_ends() -> None:
     # A drone in transit toward a restricted zone is D<id>-<from>-<to>; zone
     # names cannot contain dashes, so the split is unambiguous.
