@@ -101,6 +101,6 @@ Salida: proyecto obligatorio defendible.
 ## Después (solo si se decide, fuera del alcance obligatorio)
 
 Ideas del plan original, aparcadas deliberadamente para no meter ruido: eventos tipados
-in-process → API FastAPI (+SSE) → visualización React. Ninguna se empieza sin decisión
+in-process → API FastAPI (+SSE) → visualización con HTML, CSS y JavaScript. Ninguna se empieza sin decisión
 explícita anotada en `PROGRESS.md`, y nunca antes de terminar M6. El dominio y el CLI
 deben seguir funcionando solos si esas piezas no existen.
