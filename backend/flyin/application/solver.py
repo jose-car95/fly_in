@@ -40,6 +40,25 @@ class FlyinSolver:
             warnings=warnings
         )
 
+    def load_text(self, source_map: str) -> FlyInMap:
+        """Parse and normalize a map given as text, without simulating.
+
+        For read-only consumers (the API map detail) that need the map's
+        structure but not a run.
+
+        Args:
+            source_map: The raw contents of a map file.
+
+        Returns:
+            The parsed map, with any restricted terminal normalized.
+
+        Raises:
+            MapParseError: If the map text is malformed.
+        """
+        fly_in_map = MapParser(source_map).parse()
+        self._normalize_terminals(fly_in_map)
+        return fly_in_map
+
     @staticmethod
     def _normalize_terminals(fly_in_map: FlyInMap) -> list[str]:
         """Coerce a restricted terminal to normal and warn about it.

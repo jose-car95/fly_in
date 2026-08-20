@@ -63,3 +63,51 @@ class SimulateResponse(BaseModel):
     turns: list[str]
     metrics: RunMetricsResponse
     warnings: list[str]
+
+
+class ZoneDetail(BaseModel):
+    """One zone of a map, with what a client needs to draw it.
+
+    Attributes:
+        name: Unique zone name.
+        x: X coordinate on the map grid.
+        y: Y coordinate on the map grid.
+        type: Zone type (normal, priority, restricted or blocked).
+        color: Declared display color, or ``None`` when absent.
+    """
+
+    name: str
+    x: int
+    y: int
+    type: str
+    color: str | None
+
+
+class ConnectionDetail(BaseModel):
+    """One undirected connection between two zones.
+
+    Attributes:
+        a: One endpoint zone name.
+        b: The other endpoint zone name.
+    """
+
+    a: str
+    b: str
+
+
+class MapDetail(BaseModel):
+    """Structure of a map returned by ``GET /maps/{index}``, enough to draw.
+
+    Attributes:
+        nb_drones: How many drones the map dispatches.
+        start: Name of the start hub.
+        end: Name of the end hub.
+        zones: Every zone with its position, type and color.
+        connections: Every undirected connection.
+    """
+
+    nb_drones: int
+    start: str
+    end: str
+    zones: list[ZoneDetail]
+    connections: list[ConnectionDetail]

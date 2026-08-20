@@ -7,7 +7,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **Frontend Slice 2 (simular al clic)** — cada mapa de la lista
+- Último slice completado: **API Slice 4 (`GET /api/v1/maps/{index}`)** — endpoint de
+  detalle del mapa para dibujarlo: devuelve `nb_drones`, `start`/`end`, `zones` (con
+  `name,x,y,type,color`) y `connections` (`a,b`). Esquemas `ZoneDetail`/`ConnectionDetail`/
+  `MapDetail`. Respeta la arquitectura: el adaptador NO llama al parser; se añade
+  `FlyinSolver.load_text(text) -> FlyInMap` (parsea + normaliza sin simular) y el handler
+  lo usa. Índice inexistente → 404. Es el Slice A del pulido visual (mapa animado). Tests
+  aislados + verificado en vivo con un mapa real.
+- Anterior: **Frontend Slice 2 (simular al clic)** — cada mapa de la lista
   es un botón; al hacer clic, `app.js` hace `fetch` con `POST` a `/api/v1/simulate`
   (`body: JSON.stringify({index})`) y pinta el resultado: bloque de métricas (Turns / Total
   moves / Drones-per-turn) y una lista `<ol>` con una línea por turno. DOM construido con
