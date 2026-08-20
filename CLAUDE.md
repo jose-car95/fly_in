@@ -16,7 +16,7 @@ La función de Claude aquí no es solo escribir código: es la de profesor guian
 aprendizaje real.
 
 - Antes de implementar cualquier pieza que use un concepto nuevo (BFS, Dijkstra,
-  grafo expandido en el tiempo, reservas de capacidad, FastAPI, React, etc.), explica
+  grafo expandido en el tiempo, reservas de capacidad, FastAPI, JavaScript, etc.), explica
   el concepto primero en términos simples, con una analogía si ayuda, y comprueba que
   tiene sentido antes de escribir código.
 - Usa `/explica <concepto>` para profundizar sin gastar el contexto del hilo de
@@ -135,7 +135,7 @@ el Python vive en `backend/` con su propio `pyproject.toml`.
 
 - `backend/` — todo el Python (paquete `flyin`, `tests/`, `pyproject.toml`,
   `.flake8`). Es el corazón: aquí vive el motor de simulación.
-- `frontend/` — reservada para la futura UI React. Hoy solo un README-puerta; sin código.
+- `frontend/` — reservada para la futura UI (HTML, CSS y JavaScript). Hoy solo un README-puerta; sin código.
 - `Makefile` (raíz, ÚNICO) — orquesta todo alcanzando `backend/` con `uv --directory
   backend`; `run` y `debug` usan `--project backend` para que las rutas de mapas se
   resuelvan desde la raíz (`make run ARGS=maps/easy/01_linear_path.txt`). Lleva las
@@ -154,11 +154,11 @@ Módulos del backend, con dependencias hacia dentro, sin frameworks en el domini
 - `scheduling` — reservas de capacidad/tiempo y asignación de rutas.
 - `simulation` — transición de turnos determinista + validador independiente. Expone el
   motor reusable `simulate(map, settings) -> SimulationResult`, que NO sabe quién lo
-  llama (CLI, API, tests, React): esa es la costura que mantiene abiertas las extensiones.
+  llama (CLI, API, tests, navegador): esa es la costura que mantiene abiertas las extensiones.
 - `cli` — argumentos, salida exacta y visualización coloreada. Primer cliente del motor.
 
 **Orden mandatory-first**: primero el CLI obligatorio impecable; la extensión API
-(FastAPI) + frontend (React) es un objetivo de aprendizaje DECIDIDO, pero se implementa
+(FastAPI) + frontend (HTML, CSS y JavaScript) es un objetivo de aprendizaje DECIDIDO, pero se implementa
 DESPUÉS y las carpetas internas (`api`, `application`, `visualization`, `shared`) nacen
 cuando el código las justifica, no de forma especulativa. Roadmap de nacimiento de cada
 carpeta en `docs/PROGRESS.md`. No añadas base de datos, Docker ni eventos sin decidirlo antes.

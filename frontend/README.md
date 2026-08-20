@@ -1,6 +1,6 @@
 # frontend/
 
-**Open door, not built yet.** This folder is reserved for the future React UI and
+**Open door, not built yet.** This folder is reserved for the future UI built with HTML, CSS and JavaScript and
 holds no code today.
 
 ## Why it exists already
