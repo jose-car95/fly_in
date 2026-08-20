@@ -1,5 +1,5 @@
-.PHONY: install run run-visual serve debug bench lint lint-strict test \
-        quality clean fclean re
+.PHONY: install run run-visual serve serve-web debug bench lint lint-strict \
+        test quality clean fclean re
 
 BACKEND := backend
 UV := uv run --directory $(BACKEND)
@@ -18,6 +18,9 @@ run-visual:
 
 serve:
 	uv run --project $(BACKEND) uvicorn flyin.adapters.api.app:create_app --factory --host 127.0.0.1 --port 8000 --reload
+
+serve-web:
+	python3 -m http.server 8080 --directory frontend
 
 debug:
 	uv run --project $(BACKEND) python -m pdb -m flyin $(ARGS)

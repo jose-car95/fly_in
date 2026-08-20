@@ -1,23 +1,29 @@
 # frontend/
 
-**Open door, not built yet.** This folder is reserved for the future UI built with HTML, CSS and JavaScript and
-holds no code today.
+A small web UI (plain HTML, CSS and JavaScript) that talks to the backend
+REST API and shows the simulation. It holds **no** business logic: routing and
+scheduling live entirely in `backend/`.
 
-## Why it exists already
+## Files
 
-The `backend/` ↔ `frontend/` split is a deliberate architectural boundary. We
-create the folder now — with only this note — so the boundary is visible and the
-move is done while the repo is small. Nothing here has real code until the
-frontend milestone.
+- `index.html` — the page structure.
+- `style.css` — the styling.
+- `app.js` — calls the API with `fetch` and renders the result into the DOM.
 
-## Its only responsibility (when built)
+## Running it
 
-- Call the backend REST API (`POST /simulate`, `GET /maps`, …).
-- Receive JSON and display the simulation.
-- **Never** contain business logic: it must not know how routing or scheduling
-  work. The simulation engine lives entirely in `backend/`.
+The page and the API are served on **different origins**, so the API allows the
+page's origin via CORS (see `FRONTEND_ORIGINS` in the backend `app.py`).
 
-## When it is born
+```sh
+make serve       # API   on http://127.0.0.1:8000
+make serve-web   # page  on http://127.0.0.1:8080   (in a second terminal)
+```
 
-After the mandatory CLI project is complete and the backend exposes a stable REST
-API. See `docs/PROGRESS.md` for the decision record and the architecture roadmap.
+Then open http://127.0.0.1:8080 in a browser.
+
+## Boundary
+
+- Calls the backend REST API (`GET /api/v1/maps`, `POST /api/v1/simulate`).
+- Receives JSON and displays it.
+- Never contains business logic. See `docs/PROGRESS.md` for the decisions.

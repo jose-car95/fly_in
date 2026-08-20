@@ -7,7 +7,15 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **Limpieza: `RunMetrics` → `application/`** — se mueve
+- Último slice completado: **Frontend Slice 1 (lista de mapas)** — nace la web en
+  `frontend/` (`index.html` + `style.css` + `app.js`): al cargar hace `fetch` a
+  `GET /api/v1/maps` y pinta la lista en el DOM. Servido aparte (`make serve-web`,
+  `http.server :8080`), distinto origen que la API (`:8000`) → se añade middleware CORS en
+  `app.py` (`FRONTEND_ORIGINS` permite `:8080`), con test propio (`test_cors.py`: concede
+  el origen permitido, niega uno desconocido). Decidido con Jose el modelo de 2 servidores
+  + CORS (sobre servir estático desde FastAPI) para aprender CORS. Verificado end-to-end:
+  API con cabecera `access-control-allow-origin` a `:8080`, página y `app.js` servidos.
+- Anterior: **Limpieza: `RunMetrics` → `application/`** — se mueve
   `RunMetrics` de `adapters/cli/metrics.py` a `application/metrics.py` (con `git mv`, y su
   test a `tests/application/`). Motivo: lo usan ya DOS adaptadores (CLI visual + API
   simulate), así que un adaptador importándolo de otro era acoplamiento indebido; su sitio
