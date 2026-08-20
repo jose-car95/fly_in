@@ -7,7 +7,7 @@ def test_health_endpoint_reports_ok() -> None:
     # TestClient calls the app in-process, without opening a real port.
     client = TestClient(create_app())
 
-    response = client.get("/health")
+    response = client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}

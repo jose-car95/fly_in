@@ -7,13 +7,18 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **API Slice 1 (`GET /health`)** — nace el adaptador
-  `flyin/adapters/api/` (segundo cliente del motor, junto al CLI). Clase `FlyinApi` que
-  construye la app FastAPI y registra rutas como métodos (`_health`); factory
-  `create_app()` para uvicorn (`--factory`) y los tests. Regla `make serve`
-  (uvicorn en `127.0.0.1:8000`, `--reload`). Deps fastapi/uvicorn/httpx en el grupo
-  `dev`; `dependencies` del paquete obligatorio siguen VACÍAS. Verificado en vivo:
-  `curl /health` → `{"status":"ok"}` (200) y servidor apagado sin huérfanos.
+- Último slice completado: **API Slice 1b (estructura de routers)** — se reorganiza el
+  adaptador HTTP en capas idiomáticas de FastAPI: `routers/health.py` (el endpoint),
+  `router.py` (router raíz que agrupa bajo el prefijo versionado `/api/v1`), `schemas.py`
+  (Pydantic `HealthResponse`). `create_app()` incluye el router raíz; se retira la clase
+  `FlyinApi`. El endpoint pasa a `GET /api/v1/health`. Decisión de diseño: el núcleo
+  (dominio/aplicación) sigue OOP; la capa HTTP adopta el idioma de routers de FastAPI
+  (objetos configurados una vez al importar, no estado mutable). Verificado en vivo:
+  `/api/v1/health` → 200 `{"status":"ok"}`; la vieja `/health` → 404.
+- Anterior: **API Slice 1 (`GET /health`)** — nace el adaptador `flyin/adapters/api/`
+  (segundo cliente del motor, junto al CLI) con `create_app()`, `make serve` (uvicorn en
+  `127.0.0.1:8000 --factory --reload`) y deps fastapi/uvicorn/httpx en el grupo `dev`;
+  `dependencies` del paquete obligatorio siguen VACÍAS.
 - Anterior: M6.3 (README del cap. VIII) — `README.md` raíz con las 7
   secciones que pide el subject (primera línea 42, Description, Instructions, Example,
   Algorithm explanation, Visual representation, Resources + uso de IA). El ejemplo
