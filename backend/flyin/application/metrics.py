@@ -1,8 +1,8 @@
-"""Summary numbers of a solved run, for the visual view only.
+"""Summary figures of a solved run, counted from its movement lines.
 
-These are display figures shown behind ``--visual``; they never touch the
-exact movement lines the evaluator reads. Every metric is counted straight
-from those lines, so it can never disagree with them.
+An application-level value object used by any adapter that presents a run:
+the CLI visual view and the HTTP API both build it from the same movement
+lines, so their numbers can never disagree with the plan.
 """
 
 

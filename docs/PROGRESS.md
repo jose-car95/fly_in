@@ -7,16 +7,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **API Slice 3 (`POST /api/v1/simulate`)** — nace
+- Último slice completado: **Limpieza: `RunMetrics` → `application/`** — se mueve
+  `RunMetrics` de `adapters/cli/metrics.py` a `application/metrics.py` (con `git mv`, y su
+  test a `tests/application/`). Motivo: lo usan ya DOS adaptadores (CLI visual + API
+  simulate), así que un adaptador importándolo de otro era acoplamiento indebido; su sitio
+  correcto es la capa de aplicación, de donde ambos adaptadores dependen hacia dentro.
+  Resuelve la deuda que dejó el Slice 3. Cero referencias restantes a `adapters.cli.metrics`.
+- Anterior: **API Slice 3 (`POST /api/v1/simulate`)** — nace
   `routers/simulate.py`: recibe `{"index": N}` (esquema `SimulateRequest`), busca el mapa
   en el mismo `MapCatalog` (inyectado con `Depends`), lo lee y lo pasa al motor real
   (`FlyinSolver().solve_text`), y devuelve `turns` (movement lines) + `metrics`
   (`RunMetrics`) + `warnings` (esquema `SimulateResponse`). Índice inexistente → 404
   (`HTTPException`); cuerpo sin `index` → 422 (validación automática de FastAPI). Cierra
-  el ciclo navegador→API→motor→JSON. DEUDA a resolver: `simulate.py` importa `RunMetrics`
-  de `adapters/cli/` (acoplamiento adaptador→adaptador); candidato a mover `RunMetrics` a
-  `application/` al ser ya usado por dos adaptadores. Verificado en vivo: 200 con el plan,
-  404 y 422.
+  el ciclo navegador→API→motor→JSON. Verificado en vivo: 200 con el plan, 404 y 422.
 - Anterior: **API Slice 2 (`GET /api/v1/maps`)** — nace `routers/maps.py`
   con `maps_router` y el esquema `MapOption` (`index:int`, `path:str`). Reutiliza el
   MISMO `MapCatalog` que el menú del CLI, inyectado con `Depends(get_catalog)` para poder

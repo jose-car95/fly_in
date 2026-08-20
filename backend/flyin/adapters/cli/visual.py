@@ -8,7 +8,7 @@ stay untouched and this view is only produced behind an explicit flag.
 
 from typing import Iterator
 
-from flyin.adapters.cli.metrics import RunMetrics
+from flyin.application.metrics import RunMetrics
 from flyin.domain.fly_in_map import FlyInMap
 from flyin.domain.zone import Zone
 

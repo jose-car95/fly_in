@@ -1,4 +1,4 @@
-from flyin.adapters.cli.metrics import RunMetrics
+from flyin.application.metrics import RunMetrics
 
 
 def test_turns_is_the_number_of_movement_lines() -> None:

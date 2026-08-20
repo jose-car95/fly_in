@@ -8,8 +8,8 @@ from flyin.adapters.api.schemas import (
     SimulateRequest,
     SimulateResponse
 )
-from flyin.adapters.cli.metrics import RunMetrics
 from flyin.adapters.map_catalog import MapCatalog
+from flyin.application.metrics import RunMetrics
 from flyin.application.solver import FlyinSolver
 
 
