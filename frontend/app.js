@@ -18,7 +18,7 @@ const KNOWN_COLORS = new Set([
 ]);
 const FALLBACK_COLOR = "#4aa3ff";
 
-// State of the map currently on screen, reset every time a map is chosen.
+let maps = [];         // catalog, to resolve the selected index to a map
 let animation = null;  // { frames, drones, timer }
 let camera = null;     // { svg, box, baseBox, drag }
 
@@ -27,29 +27,45 @@ async function fetchJson(url, options) {
   return response.json();
 }
 
-// Ask the API for the catalog and render each map as a clickable button.
+// -- Map picker -------------------------------------------------------------
+
 async function loadMaps() {
-  const list = document.getElementById("map-list");
+  const select = document.getElementById("map-select");
   try {
-    const maps = await fetchJson(`${API_BASE}/maps`);
-    list.textContent = "";
+    maps = await fetchJson(`${API_BASE}/maps`);
+    select.textContent = "";
+    select.appendChild(option("", "— Choose a map —"));
     for (const map of maps) {
-      list.appendChild(mapItem(map));
+      select.appendChild(option(String(map.index), `${map.index}. ${map.path}`));
     }
   } catch (error) {
-    list.textContent = "Could not reach the API. Is it running?";
+    select.textContent = "";
+    select.appendChild(option("", "Could not reach the API"));
   }
 }
 
-function mapItem(map) {
-  const item = document.createElement("li");
-  const button = document.createElement("button");
-  button.className = "map-btn";
-  button.type = "button";
-  button.textContent = `${map.index}. ${map.path}`;
-  button.addEventListener("click", () => chooseMap(map));
-  item.appendChild(button);
-  return item;
+function option(value, text) {
+  const el = document.createElement("option");
+  el.value = value;
+  el.textContent = text;
+  return el;
+}
+
+function simulateSelected() {
+  const value = document.getElementById("map-select").value;
+  if (!value) {
+    return;
+  }
+  const map = maps.find((candidate) => candidate.index === Number(value));
+  if (map) {
+    chooseMap(map);
+  }
+}
+
+// Changing the picker clears the view: a new map needs a new Simulate click.
+function onSelectChange() {
+  stopAnimation();
+  document.getElementById("result").hidden = true;
 }
 
 // Draw the map, run its simulation, and arm the turn-by-turn animation.
@@ -150,8 +166,8 @@ function zoneColor(color) {
 // -- Animating the drones ---------------------------------------------------
 
 // Re-derive where each drone stands after every turn, from the plan lines.
-// A "D<id>-<zone>" token lands the drone on a zone; a "D<id>-<a>-<b>" token
-// is a restricted transit, drawn at the midpoint of the connection.
+// "D<id>-<zone>" lands a drone on a zone; "D<id>-<a>-<b>" is a restricted
+// transit, drawn at the midpoint of the connection.
 function framesFromTurns(detail, positions, turns) {
   const current = {};
   for (let id = 1; id <= detail.nb_drones; id += 1) {
@@ -220,6 +236,14 @@ function play() {
       stopTimer();
     }
   }, FRAME_MS);
+}
+
+// Stop halts the animation and returns the drones to the start.
+function stop() {
+  stopTimer();
+  if (animation) {
+    showFrame(0);
+  }
 }
 
 function stopTimer() {
@@ -319,7 +343,7 @@ function onDragEnd() {
   }
 }
 
-// -- Metrics and turns (unchanged behavior) ---------------------------------
+// -- Metrics and turns ------------------------------------------------------
 
 function renderMetrics(metrics) {
   const container = document.getElementById("metrics");
@@ -357,15 +381,36 @@ function renderTurns(turns) {
   }
 }
 
+function openTurns() {
+  document.getElementById("turns-modal").hidden = false;
+}
+
+function closeTurns() {
+  document.getElementById("turns-modal").hidden = true;
+}
+
 // -- Wiring -----------------------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
   loadMaps();
+  document.getElementById("simulate-btn")
+    .addEventListener("click", simulateSelected);
+  document.getElementById("map-select")
+    .addEventListener("change", onSelectChange);
   document.getElementById("play-btn").addEventListener("click", play);
+  document.getElementById("stop-btn").addEventListener("click", stop);
   document.getElementById("zoom-in")
     .addEventListener("click", () => zoomAtCenter(0.8));
   document.getElementById("zoom-out")
     .addEventListener("click", () => zoomAtCenter(1.25));
+  document.getElementById("turns-btn").addEventListener("click", openTurns);
+  document.getElementById("turns-close").addEventListener("click", closeTurns);
+  const modal = document.getElementById("turns-modal");
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeTurns();
+    }
+  });
   window.addEventListener("mousemove", onDragMove);
   window.addEventListener("mouseup", onDragEnd);
 });
