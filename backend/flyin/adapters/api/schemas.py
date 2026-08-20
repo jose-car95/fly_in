@@ -13,3 +13,15 @@ class HealthResponse(BaseModel):
     """
 
     status: Literal["ok"]
+
+
+class MapOption(BaseModel):
+    """One selectable map in ``GET /maps``.
+
+    Attributes:
+        index: 1-based number identifying the map in the catalog.
+        path: Human-readable location, relative to the catalog root.
+    """
+
+    index: int
+    path: str
