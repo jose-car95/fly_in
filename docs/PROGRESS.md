@@ -7,7 +7,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **Frontend — pulido visual (SVG animado + zoom), slices B+C+D**
+- Último slice completado: **Frontend — rediseño de UX del pulido visual** — desplegable
+  `<select>` de mapas + botón **Simular** (cambiar de mapa oculta el resultado hasta volver
+  a Simular); botón **Stop** junto a Play (para y vuelve al turno 0); mapa **a lo ancho**
+  (main 1100px, SVG 60vh); la lista de turnos se **oculta** y se abre en una **ventana
+  modal** (botón Turns…, cierre con ✕ o clic en el fondo); métricas debajo del mapa. Se
+  retira el CSS muerto de la lista de botones anterior. JS validado con `node --check`;
+  endpoints y estáticos → 200; backend intacto.
+- Anterior: **Frontend — pulido visual (SVG animado + zoom), slices B+C+D**
   (hechos juntos a petición de Jose). **B (dibujar):** al elegir un mapa, `GET /maps/{index}`
   y se pinta en **SVG** (zonas como círculos en su `(x,y)`, escala 100 px/u, `viewBox` =
   bounding box; color por nombre CSS con fallback; conexiones y etiquetas; start/end
