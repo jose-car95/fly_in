@@ -7,7 +7,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **API Slice 4 (`GET /api/v1/maps/{index}`)** — endpoint de
+- Último slice completado: **Frontend — pulido visual (SVG animado + zoom), slices B+C+D**
+  (hechos juntos a petición de Jose). **B (dibujar):** al elegir un mapa, `GET /maps/{index}`
+  y se pinta en **SVG** (zonas como círculos en su `(x,y)`, escala 100 px/u, `viewBox` =
+  bounding box; color por nombre CSS con fallback; conexiones y etiquetas; start/end
+  resaltados; `createElementNS`). **C (animar):** de las `movement_lines` se derivan las
+  posiciones de cada dron por turno (token `D-zona` = aterriza; `D-a-b` = punto medio de la
+  conexión); botón **Play** que avanza turno a turno con un timer, drones como círculos que
+  transicionan con CSS `transform`; etiqueta `Turn i / N`. **D (zoom/pan):** botones +/− y
+  **rueda del ratón** (zoom hacia el cursor moviendo el `viewBox`), y **arrastrar** para
+  desplazar; zoom acotado. JS validado con `node --check`; backend intacto (116 passed).
+- Anterior: **API Slice 4 (`GET /api/v1/maps/{index}`)** — endpoint de
   detalle del mapa para dibujarlo: devuelve `nb_drones`, `start`/`end`, `zones` (con
   `name,x,y,type,color`) y `connections` (`a,b`). Esquemas `ZoneDetail`/`ConnectionDetail`/
   `MapDetail`. Respeta la arquitectura: el adaptador NO llama al parser; se añade
