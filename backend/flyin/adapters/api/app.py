@@ -11,6 +11,6 @@ from flyin.adapters.api.router import api_v1_router
 
 def create_app() -> FastAPI:
     """Application factory used by uvicorn (``--factory``) and the tests."""
-    app = FastAPI(title="jose-car Fly-In API")  
+    app = FastAPI(title="jose-car Fly-In API")
     app.include_router(api_v1_router)
     return app
