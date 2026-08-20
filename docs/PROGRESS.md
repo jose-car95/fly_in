@@ -7,14 +7,19 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: M6.2 (estadísticas) — bajo `--visual`, tras el bloque de
+- Último slice completado: M6.3 (README del cap. VIII) — `README.md` raíz con las 7
+  secciones que pide el subject (primera línea 42, Description, Instructions, Example,
+  Algorithm explanation, Visual representation, Resources + uso de IA). El ejemplo
+  input→output usa `maps/easy/01_linear_path.txt` y su salida REAL verificada (requisito
+  nuevo v1.6). Con esto se cierra TODO lo obligatorio; queda solo pulir las notas de
+  defensa y, tras ello, la extensión API/React.
+- Anterior: M6.2 (estadísticas) — bajo `--visual`, tras el bloque de
   turnos se muestra un bloque `Metrics:` con 3 números: `Turns` (makespan), `Total
   moves` (= coste total de ruta) y `Drones/turn (avg)` (throughput). Nace
   `flyin/adapters/cli/metrics.py` con `RunMetrics`, que los cuenta desde las
   MISMAS `movement_lines` (cada token = un dron gastando un turno, así que total de
   tokens = coste total sin re-derivar costes ni casar el tránsito restricted). Salida
-  por defecto intacta (0 códigos de escape, 0 palabras de stats). PENDIENTE de M6: el
-  README del cap. VIII.
+  por defecto intacta (0 códigos de escape, 0 palabras de stats).
 - Anterior: M6.1 (visualización con colores) — `--visual` pinta el estado de cada zona (tipo, capacidad, coordenadas, color) y los turnos, usando `Zone.color`. `VisualRenderer` colorea los tokens partiendo por `-`, lo que es seguro porque el subject prohíbe guiones en los nombres de zona. La salida por defecto NO cambia (verificado byte a byte).
 - Anterior: catálogo de mapas (Slice A) — nace
   `flyin/adapters/map_catalog.py` con `MapCatalog`/`MapFileOption`: lista numerada y

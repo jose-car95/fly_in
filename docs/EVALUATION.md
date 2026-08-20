@@ -6,7 +6,7 @@ Solo marcar `EVIDENCED` con un test, comando, fichero o demo concreta.
 | Ítem de rúbrica | Comportamiento / evidencia requerida | Evidencia planeada | Estado |
 | --- | --- | --- | --- |
 | Makefile | Reglas `install`, `run`, `debug` (pdb), `clean`, `lint` con los flags del subject III.2 | `make debug` arranca pdb y para en breakpoints; `make lint` caza una función sin tipos que `mypy .` a secas deja pasar | EVIDENCED |
-| README | Primera línea 42, Description, Instructions, Resources/uso de IA, algoritmo, visual, ejemplo | Revisión del README raíz | NOT_STARTED |
+| README | Primera línea 42, Description, Instructions, Resources/uso de IA, algoritmo, visual, ejemplo | `README.md` raíz con las 7 secciones; el ejemplo `01_linear_path` input→output es salida real verificada (requisito v1.6) | EVIDENCED |
 | OOP | Separación/encapsulación; herencia solo justificada | Diseño de paquetes + explicación | IN_PROGRESS |
 | Type safety | `mypy .` sin errores, hints completos | `make lint` (mypy, 36 ficheros sin errores) | EVIDENCED |
 | Grafo propio | Sin librería prohibida; saber explicarlo | `tests/graph`, `tests/pathfinding`; sin networkx/graphlib | EVIDENCED |
