@@ -7,7 +7,14 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **Frontend Slice 1 (lista de mapas)** — nace la web en
+- Último slice completado: **Frontend Slice 2 (simular al clic)** — cada mapa de la lista
+  es un botón; al hacer clic, `app.js` hace `fetch` con `POST` a `/api/v1/simulate`
+  (`body: JSON.stringify({index})`) y pinta el resultado: bloque de métricas (Turns / Total
+  moves / Drones-per-turn) y una lista `<ol>` con una línea por turno. DOM construido con
+  `createElement`/`textContent` (sin `innerHTML`, para evitar inyección). Backend intacto.
+  Verificado en vivo: preflight `OPTIONS` → 200 con `allow-methods: GET, POST`, y `POST`
+  real `{index:2}` → 200 con el plan; el ciclo clic→POST→render queda probado por piezas.
+- Anterior: **Frontend Slice 1 (lista de mapas)** — nace la web en
   `frontend/` (`index.html` + `style.css` + `app.js`): al cargar hace `fetch` a
   `GET /api/v1/maps` y pinta la lista en el DOM. Servido aparte (`make serve-web`,
   `http.server :8080`), distinto origen que la API (`:8000`) → se añade middleware CORS en
