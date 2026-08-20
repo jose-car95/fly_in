@@ -7,7 +7,13 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **API Slice 1b (estructura de routers)** — se reorganiza el
+- Último slice completado: **API Slice 2 (`GET /api/v1/maps`)** — nace `routers/maps.py`
+  con `maps_router` y el esquema `MapOption` (`index:int`, `path:str`). Reutiliza el
+  MISMO `MapCatalog` que el menú del CLI, inyectado con `Depends(get_catalog)` para poder
+  sustituirlo en los tests (`app.dependency_overrides`). Devuelve la lista de mapas como
+  JSON. Tests: uno aislado (catálogo falso en `tmp_path`) y uno de integración contra el
+  catálogo oficial real. Verificado en vivo: `/api/v1/maps` → 200 con la lista.
+- Anterior: **API Slice 1b (estructura de routers)** — se reorganiza el
   adaptador HTTP en capas idiomáticas de FastAPI: `routers/health.py` (el endpoint),
   `router.py` (router raíz que agrupa bajo el prefijo versionado `/api/v1`), `schemas.py`
   (Pydantic `HealthResponse`). `create_app()` incluye el router raíz; se retira la clase
