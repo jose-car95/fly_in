@@ -4,10 +4,13 @@ const API_BASE = "http://127.0.0.1:8000/api/v1";
 
 // SVG elements need their namespace, and map units are scaled to pixels.
 const SVG_NS = "http://www.w3.org/2000/svg";
-const SCALE = 100;
+const SCALE = 160;
 const MARGIN = 60;
 const ZONE_RADIUS = 20;
 const DRONE_RADIUS = 9;
+// In user units (not screen px), so labels scale with the map and their
+// width stays small next to the SCALE-wide gap between zones: no overlap.
+const LABEL_FONT_SIZE = 13;
 const FRAME_MS = 650;
 
 // The color names the official maps use that are also valid CSS colors.
@@ -17,6 +20,15 @@ const KNOWN_COLORS = new Set([
   "crimson", "darkred", "lime", "violet"
 ]);
 const FALLBACK_COLOR = "#4aa3ff";
+// The CLI paints color=rainbow letter by letter, cycling these hues; the web
+// mirrors that (and fills a rainbow zone circle with a gradient of them).
+const RAINBOW_COLORS = [
+  "#e06c75", "#e5c07b", "#98c379", "#56b6c2", "#61afef", "#c678dd"
+];
+
+function isRainbow(color) {
+  return (color || "").toLowerCase() === "rainbow";
+}
 
 let maps = [];         // catalog, to resolve the selected index to a map
 let animation = null;  // { frames, drones, timer }
@@ -102,6 +114,7 @@ function buildSvg(detail, positions) {
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("class", "map-svg");
   svg.setAttribute("viewBox", viewBox(Object.values(positions)));
+  svg.appendChild(rainbowDefs());
   for (const conn of detail.connections) {
     svg.appendChild(line(positions[conn.a], positions[conn.b]));
   }
@@ -126,6 +139,22 @@ function viewBox(points) {
   return `${minX} ${minY} ${width} ${height}`;
 }
 
+// A gradient of the rainbow hues, used to fill a color=rainbow zone circle.
+function rainbowDefs() {
+  const defs = document.createElementNS(SVG_NS, "defs");
+  const gradient = document.createElementNS(SVG_NS, "linearGradient");
+  gradient.setAttribute("id", "rainbow");
+  RAINBOW_COLORS.forEach((color, index) => {
+    const stop = document.createElementNS(SVG_NS, "stop");
+    const share = index / (RAINBOW_COLORS.length - 1);
+    stop.setAttribute("offset", `${share * 100}%`);
+    stop.setAttribute("stop-color", color);
+    gradient.appendChild(stop);
+  });
+  defs.appendChild(gradient);
+  return defs;
+}
+
 function line(a, b) {
   const el = document.createElementNS(SVG_NS, "line");
   el.setAttribute("x1", a.x);
@@ -141,9 +170,16 @@ function zoneCircle(zone, pos, detail) {
   el.setAttribute("cx", pos.x);
   el.setAttribute("cy", pos.y);
   el.setAttribute("r", ZONE_RADIUS);
-  el.setAttribute("fill", zoneColor(zone.color));
+  el.setAttribute(
+    "fill", isRainbow(zone.color) ? "url(#rainbow)" : zoneColor(zone.color)
+  );
   const terminal = zone.name === detail.start || zone.name === detail.end;
   el.setAttribute("class", terminal ? "zone zone--terminal" : "zone");
+  // Native tooltip: hovering a zone shows its full name even on dense maps
+  // where the drawn labels are small or overlap.
+  const tooltip = document.createElementNS(SVG_NS, "title");
+  tooltip.textContent = zone.name;
+  el.appendChild(tooltip);
   return el;
 }
 
@@ -152,9 +188,34 @@ function zoneLabel(zone, pos) {
   el.setAttribute("x", pos.x);
   el.setAttribute("y", pos.y + ZONE_RADIUS + 22);
   el.setAttribute("text-anchor", "middle");
+  el.setAttribute("font-size", LABEL_FONT_SIZE);
   el.setAttribute("class", "zone-label");
-  el.textContent = zone.name;
+  if (isRainbow(zone.color)) {
+    for (const child of rainbowChars(zone.name, "tspan")) {
+      el.appendChild(child);
+    }
+  } else {
+    el.textContent = zone.name;
+  }
   return el;
+}
+
+// One element per character of name, each in the next rainbow hue. Kind is
+// "tspan" for SVG text, "span" for HTML (the turns modal).
+function rainbowChars(name, kind) {
+  return [...name].map((character, index) => {
+    const color = RAINBOW_COLORS[index % RAINBOW_COLORS.length];
+    if (kind === "tspan") {
+      const tspan = document.createElementNS(SVG_NS, "tspan");
+      tspan.textContent = character;
+      tspan.setAttribute("fill", color);
+      return tspan;
+    }
+    const span = document.createElement("span");
+    span.textContent = character;
+    span.style.color = color;
+    return span;
+  });
 }
 
 function zoneColor(color) {
@@ -415,12 +476,22 @@ function appendToken(item, token, colorByName) {
     if (index === 0) {
       item.appendChild(document.createTextNode(part));
     } else {
-      const span = document.createElement("span");
-      span.textContent = part;
-      span.style.color = zoneColor(colorByName[part]);
-      item.appendChild(span);
+      appendZoneName(item, part, colorByName[part]);
     }
   });
+}
+
+function appendZoneName(item, name, color) {
+  if (isRainbow(color)) {
+    for (const child of rainbowChars(name, "span")) {
+      item.appendChild(child);
+    }
+    return;
+  }
+  const span = document.createElement("span");
+  span.textContent = name;
+  span.style.color = zoneColor(color);
+  item.appendChild(span);
 }
 
 function zoneColorMap(zones) {

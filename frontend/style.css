@@ -197,7 +197,6 @@ h1 {
 .zone-label {
   fill: var(--text);
   font-family: ui-monospace, Menlo, monospace;
-  font-size: 20px;
 }
 
 .modal {
