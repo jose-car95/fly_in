@@ -7,7 +7,17 @@ Mantenerlo corto: es un puntero al estado real, no un diario exhaustivo.
 
 - Milestone: **M5 esencialmente cerrado** (M0–M4 cerrados). Benchmarks + optimización:
   bonus del challenger conseguido (43) Y motor demostrablemente válido (fallback).
-- Último slice completado: **Frontend — rediseño de UX del pulido visual** — desplegable
+- Último slice completado: **Frontend — info del mapa, restablecer vista y turnos con
+  color** — (1) al
+  simular, bajo el título se muestra una línea con los datos del propio mapa (`Drones: N ·
+  Zones: M · Connections: K · start → end`), leídos del `GET /maps/{index}` que ya se pedía
+  (distinto de las métricas de la ejecución, que están debajo del mapa). (2) Botón ↺ entre
+  − y + que restablece el `viewBox` al original (mapa completo y centrado, `camera.baseBox`)
+  tras hacer zoom/desplazar. (3) En el modal de turnos, los nombres de zona se pintan con su
+  color (como el `--visual` del CLI): cada token se parte por `-` (los nombres no llevan
+  guiones) y cada zona va en un `<span>` con `color` = su color (mismo fallback que el SVG).
+  JS `node --check` OK; backend intacto.
+- Anterior: **Frontend — rediseño de UX del pulido visual** — desplegable
   `<select>` de mapas + botón **Simular** (cambiar de mapa oculta el resultado hasta volver
   a Simular); botón **Stop** junto a Play (para y vuelve al turno 0); mapa **a lo ancho**
   (main 1100px, SVG 60vh); la lista de turnos se **oculta** y se abre en una **ventana

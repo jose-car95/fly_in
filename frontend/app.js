@@ -73,6 +73,7 @@ async function chooseMap(map) {
   stopAnimation();
   document.getElementById("result-title").textContent = map.path;
   const detail = await fetchJson(`${API_BASE}/maps/${map.index}`);
+  renderMapInfo(detail);
   const positions = zonePositions(detail.zones);
   const svg = buildSvg(detail, positions);
   mountMap(svg);
@@ -82,7 +83,7 @@ async function chooseMap(map) {
     body: JSON.stringify({ index: map.index })
   });
   renderMetrics(result.metrics);
-  renderTurns(result.turns);
+  renderTurns(result.turns, zoneColorMap(detail.zones));
   setupAnimation(detail, positions, result.turns, svg);
   document.getElementById("result").hidden = false;
 }
@@ -313,6 +314,15 @@ function zoomAtCenter(factor) {
   zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
 }
 
+// Restore the original viewBox: the whole map, centered.
+function resetZoom() {
+  if (!camera) {
+    return;
+  }
+  camera.box = { ...camera.baseBox };
+  applyBox();
+}
+
 function onWheel(event) {
   event.preventDefault();
   zoomAt(event.clientX, event.clientY, event.deltaY < 0 ? 0.9 : 1.1);
@@ -345,6 +355,14 @@ function onDragEnd() {
 
 // -- Metrics and turns ------------------------------------------------------
 
+// Show the map's own facts (as opposed to the run's metrics).
+function renderMapInfo(detail) {
+  document.getElementById("map-info").textContent =
+    `Drones: ${detail.nb_drones}  ·  Zones: ${detail.zones.length}` +
+    `  ·  Connections: ${detail.connections.length}` +
+    `  ·  ${detail.start} → ${detail.end}`;
+}
+
 function renderMetrics(metrics) {
   const container = document.getElementById("metrics");
   container.textContent = "";
@@ -371,14 +389,46 @@ function metricCell(label, value) {
   return cell;
 }
 
-function renderTurns(turns) {
+// Paint each turn line, coloring the zone names with their zone color, as
+// the CLI --visual view does. A token is "D<id>-<zone>" or "D<id>-<a>-<b>";
+// zone names cannot contain dashes, so splitting on "-" is safe.
+function renderTurns(turns, colorByName) {
   const list = document.getElementById("turns");
   list.textContent = "";
   for (const movementLine of turns) {
     const item = document.createElement("li");
-    item.textContent = movementLine;
+    movementLine.split(" ").forEach((token, index) => {
+      if (index > 0) {
+        item.appendChild(document.createTextNode(" "));
+      }
+      appendToken(item, token, colorByName);
+    });
     list.appendChild(item);
   }
+}
+
+function appendToken(item, token, colorByName) {
+  token.split("-").forEach((part, index) => {
+    if (index > 0) {
+      item.appendChild(document.createTextNode("-"));
+    }
+    if (index === 0) {
+      item.appendChild(document.createTextNode(part));
+    } else {
+      const span = document.createElement("span");
+      span.textContent = part;
+      span.style.color = zoneColor(colorByName[part]);
+      item.appendChild(span);
+    }
+  });
+}
+
+function zoneColorMap(zones) {
+  const colors = {};
+  for (const zone of zones) {
+    colors[zone.name] = zone.color;
+  }
+  return colors;
 }
 
 function openTurns() {
@@ -403,6 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", () => zoomAtCenter(0.8));
   document.getElementById("zoom-out")
     .addEventListener("click", () => zoomAtCenter(1.25));
+  document.getElementById("zoom-reset").addEventListener("click", resetZoom);
   document.getElementById("turns-btn").addEventListener("click", openTurns);
   document.getElementById("turns-close").addEventListener("click", closeTurns);
   const modal = document.getElementById("turns-modal");
