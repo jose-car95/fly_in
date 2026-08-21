@@ -4,6 +4,11 @@ The subject requires visual feedback of the simulation; this renders it as
 ANSI-colored terminal output. It is a second rendering of the very same
 result, never a replacement: the exact movement lines the evaluator reads
 stay untouched and this view is only produced behind an explicit flag.
+
+``COLOR_CODES`` maps each color the official maps declare to an ANSI code:
+the eight basic ones plus 256-color codes (``38;5;N``) for the extra shades.
+``black`` maps to bright black, since true black is unreadable on the dark
+terminals this view is meant for.
 """
 
 from typing import Iterator
@@ -14,9 +19,6 @@ from flyin.domain.zone import Zone
 
 RESET = "\033[0m"
 RAINBOW = "rainbow"
-# The eight basic ANSI codes plus 256-color ones (``38;5;N``) for the shades
-# the official maps declare. "black" maps to bright black: true black is
-# unreadable on the dark terminals these are viewed on.
 COLOR_CODES = {
     "black": "90",
     "gray": "90",

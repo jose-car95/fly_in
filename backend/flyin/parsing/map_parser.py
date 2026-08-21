@@ -1,10 +1,9 @@
 """Parse Fly-In map files into domain objects.
 
-This module turns the raw text of a map file into a :class:`FlyInMap`. It
-only covers the minimal happy path for now (``nb_drones`` plus one
-``start_hub``, one ``end_hub`` and their connections); intermediate
-``hub:`` lines, metadata, capacities and duplicate/self-loop validation
-arrive in later slices, each with its own failing test first.
+Turns the raw text of a map file into a :class:`FlyInMap`: the drone count,
+the ``start_hub``/``hub``/``end_hub`` zones with their optional metadata and
+capacities, and the connections between them. A malformed map is rejected
+with a clear error carrying its physical, 1-based line number.
 """
 
 from enum import Enum
@@ -51,10 +50,8 @@ class MapParser:
 
     One instance represents one parsing session: the map text is handed in at
     construction and consumed by :meth:`parse`. Keeping the input as instance
-    state (``self._text``) is what makes this object-oriented rather than a bag
-    of loose functions, and it prepares the ground for later slices where the
-    current line number and accumulated errors also become instance state
-    (physical 1-based line numbers in parse errors).
+    state (``self._text``) is what makes this object-oriented rather than a
+    bag of loose functions.
     """
 
     def __init__(self, text: str) -> None:
@@ -68,6 +65,11 @@ class MapParser:
 
     def parse(self) -> FlyInMap:
         """Parse the stored text into a :class:`FlyInMap`.
+
+        A single guard around each map line turns any raw ``ValueError`` from
+        a malformed line (``int()``, tuple unpacking) into a ``MapParseError``
+        carrying that line number; the parser's own ``MapParseError`` is not a
+        ``ValueError``, so it passes through untouched.
 
         Returns:
             The parsed map, with its zones indexed by name and its start/end
@@ -94,9 +96,6 @@ class MapParser:
         end: Zone | None = None
 
         for lineno, line in lines[1:]:
-            # A single guard turns any raw ValueError of a malformed line
-            # (int(), tuple unpacking) into a MapParseError carrying the line;
-            # our own MapParseError is not a ValueError, so it passes through.
             try:
                 if line.startswith(LinePrefix.START_HUB):
                     if start is not None:
@@ -200,7 +199,6 @@ class MapParser:
                         f"line {lineno}: connection references undefined "
                         f"zone {endpoint!r}"
                     )
-            # An undirected pair keyed as a set ignores endpoint order.
             link = frozenset((connection.zone_a, connection.zone_b))
             if link in seen:
                 raise MapParseError(
@@ -273,7 +271,7 @@ class MapParser:
         ``normal``), the ``max_drones=`` tag and the ``color=`` tag.
         ``max_drones`` is ignored on start/end hubs, which have unlimited
         capacity, and stays ``None`` when absent (meaning the default of 1).
-        ``color`` is a free string kept for the M6 colored view, ``None`` when
+        ``color`` is a free string kept for the colored view, ``None`` when
         absent.
 
         Args:
