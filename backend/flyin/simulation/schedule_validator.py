@@ -12,8 +12,8 @@ class ScheduleValidator:
     movement lines and re-derives every rule from scratch, so a planner bug
     that yields an illegal schedule is caught here rather than trusted. Each
     drone is tracked by id (where it stands and whether it is mid restricted
-    transit); after every turn no zone may hold more drones than its capacity.
-    Link-capacity checking arrives in a later slice.
+    transit); after every turn no zone may hold more drones than its
+    capacity, and no connection may be crossed more times than its own.
 
     Attributes:
         _map: The map the schedule was produced for.
@@ -28,14 +28,16 @@ class ScheduleValidator:
     ) -> None:
         """Store the map and the schedule to judge.
 
+        The validator builds its own adjacency and capacities straight from
+        the map, so it shares no logic with the planner: that independence is
+        what lets it catch a planner bug.
+
         Args:
             fly_in_map: The map the schedule was produced for.
             movement_lines: The movement lines, one per turn.
         """
         self._map = fly_in_map
         self._lines = movement_lines
-        # Own adjacency and capacities, built straight from the map, so the
-        # check shares no logic with the planner (the point of independence).
         self._link_caps: dict[frozenset[str], int] = {
             frozenset((c.zone_a, c.zone_b)): (
                 c.max_link_capacity
@@ -152,8 +154,8 @@ class ScheduleValidator:
             target: The restricted zone it flies toward.
 
         Returns:
-            The connection crossed on this take-off turn (decision #15: the
-            transit meters the link only now, not on the landing turn).
+            The connection crossed on this take-off turn; the transit meters
+            the link only now, not on the landing turn.
 
         Raises:
             InvalidScheduleError: If the drone is already flying, takes off

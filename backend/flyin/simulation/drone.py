@@ -18,6 +18,9 @@ class Drone:
     def __init__(self, drone_id: int, route: tuple[str, ...]) -> None:
         """Place the drone at the start of its route.
 
+        A one-zone route means the start already is the end, so the drone
+        begins delivered with nothing to do.
+
         Args:
             drone_id: The 1-based identifier for the output tokens.
             route: The ordered zone names from start to end.
@@ -25,7 +28,6 @@ class Drone:
         self.id = drone_id
         self._route = route
         self._index = 0
-        # A one-zone route means start is the end: nothing to deliver.
         self._state = (
             DroneState.DELIVERED if len(route) == 1
             else DroneState.AT_ZONE

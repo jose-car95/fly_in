@@ -1,7 +1,9 @@
 """FastAPI application for the Fly-In HTTP adapter.
 
 Builds the app that exposes the engine over HTTP (health, maps, simulate)
-and allows the separate frontend origin to call it (CORS).
+and allows the separate frontend origin to call it (CORS). ``FRONTEND_ORIGINS``
+lists the origins the static frontend is served from in development; a browser
+only lets a page read the API when its own origin is on that list.
 """
 
 from fastapi import FastAPI
@@ -9,8 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from flyin.adapters.api.router import api_v1_router
 
-# Origins the static frontend is served from in development. The browser
-# only lets a page read the API when its own origin is on this list.
 FRONTEND_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://localhost:8080"

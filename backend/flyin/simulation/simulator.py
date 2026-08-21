@@ -71,6 +71,9 @@ class Simulator:
     ) -> list[str]:
         """Run one full pass over the route and return its movement lines.
 
+        A turn that grants no token means no drone can progress; the pass
+        stops there instead of looping forever.
+
         Args:
             route: The shared cheapest route every drone follows.
             optimistic: Whether restricted zones pipeline one drone per turn.
@@ -87,9 +90,6 @@ class Simulator:
         while any(drone.is_active for drone in drones):
             tokens = self._play_turn(drones)
             if not tokens:
-                # No drone could move: a deadlock. Detecting and reporting
-                # deadlocks is a later slice; here we stop rather than loop
-                # forever.
                 break
             lines.append(" ".join(tokens))
         return lines
@@ -119,6 +119,10 @@ class Simulator:
     def _play_turn(self, drones: list[Drone]) -> list[str]:
         """Plan and apply one atomic turn; return its tokens, id-ordered.
 
+        Each move was granted against the pre-turn snapshot and mutates only
+        its own drone, so applying them in id order gives a deterministic line
+        without affecting correctness.
+
         Args:
             drones: Every drone in the simulation (delivered ones included).
 
@@ -127,8 +131,6 @@ class Simulator:
         """
         movers = self._grant_moves(drones)
         movers.sort(key=lambda drone: drone.id)
-        # Applying a granted move mutates only that drone, so the id order
-        # gives a deterministic line without affecting correctness.
         return [self._apply_move(drone) for drone in movers]
 
     def _grant_moves(self, drones: list[Drone]) -> list[Drone]:
@@ -139,6 +141,12 @@ class Simulator:
         leavers free their slot before newcomers are admitted; ties at a zone
         break by ascending id for determinism. A move needs both room in the
         target zone and a free crossing on the connection it uses.
+
+        A normal step and a restricted take-off gate identically: both leave
+        the origin and claim the target. For a restricted target the claim
+        reserves the arrival slot and the connection is metered only on this
+        take-off turn, which is what keeps the mandatory landing next turn
+        always legal.
 
         Args:
             drones: Every drone in the simulation.
@@ -155,14 +163,9 @@ class Simulator:
         for drone in parked:
             origin, target = drone.current_zone, drone.next_zone
             link = frozenset((origin, target))
-            # A normal step and a restricted take-off gate the same way: both
-            # leave the origin and claim the target. For a restricted target
-            # the claim is a reservation of the arrival slot (decision #15:
-            # the connection is metered only on this take-off turn), which is
-            # what makes the mandatory landing next turn always legal.
             if free[target] > 0 and link_free[link] > 0:
                 free[target] -= 1
-                free[origin] += 1  # its slot frees as it leaves
+                free[origin] += 1
                 link_free[link] -= 1
                 granted.append(drone)
         return granted
@@ -214,13 +217,15 @@ class Simulator:
             drone: A drone the plan granted a move this turn.
 
         Returns:
-            The movement token for the move (take-off, landing, or step).
+            The movement token: an in-transit drone lands (its mandatory
+            second restricted turn), a drone bound for a restricted zone takes
+            off (the first of the two turns), and any other drone steps once.
         """
         if drone.is_in_transit:
-            return drone.advance()  # mandatory landing
+            return drone.advance()
         if self._is_restricted(drone.next_zone):
-            return drone.takeoff()  # first of the two restricted turns
-        return drone.advance()  # normal one-turn move
+            return drone.takeoff()
+        return drone.advance()
 
     def _capacity(self, zone_name: str) -> float:
         """The effective capacity of a zone (``inf`` for the terminals).

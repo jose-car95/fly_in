@@ -1,4 +1,9 @@
-"""Run the whole official-map suite and format a benchmark table."""
+"""Run the whole official-map suite and format a benchmark table.
+
+``_TARGETS`` holds the subject's turn objective for each official map, keyed
+by its path under ``maps/``: immutable reference data kept as a module-level
+constant.
+"""
 
 from pathlib import Path
 
@@ -6,8 +11,6 @@ from flyin.benchmark.benchmark import Benchmark
 from flyin.benchmark.result import BenchmarkResult
 from flyin.parsing.map_parser import MapParser
 
-# Turn objectives from the subject, by map path under ``maps/``. Immutable
-# reference data, so a module-level constant is idiomatic here.
 _TARGETS = {
     "easy/01_linear_path.txt": 6,
     "easy/02_simple_fork.txt": 8,

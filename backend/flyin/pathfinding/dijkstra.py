@@ -43,8 +43,12 @@ class Dijkstra:
     def shortest_path(self) -> Path | None:
         """Return the cheapest route from start to end.
 
-        Runs in O((V + E) log V): each zone and edge is processed once
-        and every heap operation costs O(log V).
+        Runs in O((V + E) log V): each zone and edge is processed once and
+        every heap operation costs O(log V). ``best`` maps each zone to its
+        ordering key ``(turns, -priority_count)``, where a smaller tuple wins,
+        so fewer turns wins and, on a tie, more priority zones wins. A popped
+        entry worse than the settled best is stale and skipped, and a neighbor
+        whose move cost is ``None`` is blocked and never entered.
 
         Returns:
             The cheapest :class:`Path`, or ``None`` when the end cannot be
@@ -52,8 +56,6 @@ class Dijkstra:
         """
         start = self._map.start.name
         end = self._map.end.name
-        # Ordering key per zone: (turns, -priority_count). A smaller tuple is
-        # better, so fewer turns wins and, on a tie, more priority zones wins.
         best: dict[str, tuple[int, int]] = {start: (0, 0)}
         came_from: dict[str, str] = {}
         frontier: list[tuple[int, int, str]] = [(0, 0, start)]
@@ -62,13 +64,11 @@ class Dijkstra:
             if zone == end:
                 return self._reconstruct(came_from, end, turns)
             if (turns, neg_priority) > best[zone]:
-                # A better route was already settled: this entry is stale.
                 continue
             for neighbor in self._graph.neighbors(zone):
                 zone_type = self._map.zones[neighbor].zone_type
                 step = zone_type.move_cost
                 if step is None:
-                    # A blocked zone is impassable; never step into it.
                     continue
                 priority_bonus = 1 if zone_type is ZoneType.PRIORITY else 0
                 key = (turns + step, neg_priority - priority_bonus)

@@ -23,7 +23,7 @@ class ZoneType(Enum):
         The cost is fixed by the subject and depends only on the destination
         type, so it belongs to the type itself. ``BLOCKED`` returns ``None``
         to mean impassable: a blocked zone is never entered and so never joins
-        the traversable graph built in M2.
+        the traversable graph.
 
         Returns:
             1 for ``NORMAL`` and ``PRIORITY``, 2 for ``RESTRICTED``, or
@@ -44,14 +44,14 @@ class Zone:
 
     Attributes:
         name: Unique identifier of the zone.
-        x: X coordinate (used only for visualization for now).
-        y: Y coordinate (used only for visualization for now).
+        x: X coordinate, used for visualization.
+        y: Y coordinate, used for visualization.
         zone_type: Kind of the zone, which sets its movement cost.
         max_drones: Declared capacity, or ``None`` for the default (1). It is
             ignored for start/end hubs, which have unlimited capacity.
         color: Display color declared in the map, or ``None`` when absent. It
-            is purely visual (used by the colored terminal view in M6) and
-            never affects routing or output.
+            is purely visual (used by the colored terminal view) and never
+            affects routing or output.
         is_start: Whether this zone is the map's start hub.
         is_end: Whether this zone is the map's end hub.
     """
