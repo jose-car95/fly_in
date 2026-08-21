@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fly-In — Guía de defensa</title>
+    <style>
+      :root {
+        --bg: #0f1420; --panel: #1a2130; --panel2: #131a27;
+        --text: #e6ecf5; --muted: #93a1b5; --accent: #4aa3ff;
+        --good: #6cc06c; --warn: #e5c07b; --line: #2a3346; --code: #0c111b;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; background: var(--bg); color: var(--text);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+      .wrap { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
+      h1 { color: var(--accent); font-size: 2rem; margin: 0 0 .2rem; }
+      h2 {
+        color: var(--accent); margin: 2.6rem 0 .8rem; font-size: 1.35rem;
+        border-bottom: 1px solid var(--line); padding-bottom: .3rem;
+      }
+      h3 { margin: 1.4rem 0 .5rem; font-size: 1.05rem; }
+      .lead { color: var(--muted); margin: 0 0 1.5rem; }
+      code {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        background: var(--code); padding: .1rem .35rem; border-radius: 4px;
+        font-size: .88em;
+      }
+      pre {
+        background: var(--code); border: 1px solid var(--line);
+        border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto;
+        font-size: .82rem; line-height: 1.45;
+      }
+      pre code { background: none; padding: 0; }
+      table { border-collapse: collapse; width: 100%; margin: .8rem 0; }
+      th, td {
+        border: 1px solid var(--line); padding: .5rem .7rem;
+        text-align: left; vertical-align: top; font-size: .9rem;
+      }
+      th { background: var(--panel2); color: var(--accent); }
+      .card {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0;
+      }
+      .toc { columns: 2; column-gap: 2rem; }
+      .toc a { color: var(--text); text-decoration: none; }
+      .toc a:hover { color: var(--accent); }
+      .toc li { margin: .25rem 0; }
+      .tag {
+        display: inline-block; font-size: .7rem; text-transform: uppercase;
+        letter-spacing: .04em; padding: .1rem .5rem; border-radius: 999px;
+        background: #23324a; color: var(--accent); margin-left: .4rem;
+        vertical-align: middle;
+      }
+      .say {
+        border-left: 3px solid var(--good); background: var(--panel2);
+        padding: .6rem .9rem; margin: .7rem 0; border-radius: 0 6px 6px 0;
+      }
+      .say b { color: var(--good); }
+      .watch {
+        border-left: 3px solid var(--warn); background: var(--panel2);
+        padding: .6rem .9rem; margin: .7rem 0; border-radius: 0 6px 6px 0;
+      }
+      .watch b { color: var(--warn); }
+      .live {
+        border: 2px solid var(--accent); border-radius: 12px;
+        padding: 1.2rem 1.4rem; margin: 1.4rem 0; background: var(--panel2);
+      }
+      .muted { color: var(--muted); }
+      ol.steps > li { margin: .8rem 0; }
+      .where { color: var(--muted); font-size: .85rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Fly-In — Guía de defensa</h1>
+      <p class="lead">
+        Todo lo que necesito saber para explicar y demostrar el proyecto en el
+        peer review, ordenado por temas. Para cada uno: qué se comprueba, cómo
+        lo explico con mis palabras, y dónde está en el código. Al final, el
+        guion del cambio en vivo <code>--capacity-info</code>.
+      </p>
+
+      <div class="card">
+        <b>Índice</b>
+        <ul class="toc">
+          <li><a href="#demo">1. Cómo arrancar y demostrar</a></li>
+          <li><a href="#readme">2. README</a></li>
+          <li><a href="#oop">3. OOP + type-safe</a></li>
+          <li><a href="#grafo">4. El grafo propio</a></li>
+          <li><a href="#parser">5. Parser y errores</a></li>
+          <li><a href="#zonas">6. Zonas y movimiento</a></li>
+          <li><a href="#dijkstra">7. Pathfinding: Dijkstra</a></li>
+          <li><a href="#sim">8. Simulación y capacidad</a></li>
+          <li><a href="#salida">9. Formato de salida</a></li>
+          <li><a href="#visual">10. Visualización</a></li>
+          <li><a href="#bench">11. Rendimiento / benchmarks</a></li>
+          <li><a href="#edge">12. Casos límite y errores</a></li>
+          <li><a href="#live">13. ⭐ Cambio en vivo: --capacity-info</a></li>
+          <li><a href="#bonus">14. Bonus</a></li>
+          <li><a href="#glosario">15. Glosario rápido</a></li>
+        </ul>
+      </div>
+
+      <h2 id="demo">1. Cómo arrancar y demostrar</h2>
+      <p>Todo se maneja con el <code>Makefile</code> de la raíz.</p>
+      <pre><code>make install                                # crea el entorno (uv)
+make run ARGS=maps/easy/01_linear_path.txt  # salida del evaluador (stdout)
+make run                                    # sin mapa: menú para elegir
+make run-visual ARGS=maps/easy/01_linear_path.txt  # vista coloreada
+make debug ARGS=maps/easy/01_linear_path.txt       # pdb
+make test                                   # tests
+make lint                                   # flake8 + mypy</code></pre>
+      <div class="say">
+        <b>Digo:</b> "El programa lee un mapa de texto, calcula el plan y lo
+        imprime, una línea por turno. La salida exacta va a <b>stdout</b>; los
+        avisos y errores a <b>stderr</b>, para que no ensucien lo que se
+        compara."
+      </div>
+
+      <h2 id="readme">2. README <span class="tag">se comprueba</span></h2>
+      <p>El <code>README.md</code> de la raíz tiene las 5 secciones exigidas:</p>
+      <table>
+        <tr><th>Sección</th><th>Qué contiene</th></tr>
+        <tr><td>Description</td><td>propósito y visión general</td></tr>
+        <tr><td>Instructions</td><td>cómo instalar y ejecutar (los <code>make</code>)</td></tr>
+        <tr><td>Algorithm explanation</td><td>el pipeline y las decisiones</td></tr>
+        <tr><td>Visual representation</td><td>qué hace <code>--visual</code></td></tr>
+        <tr><td>Example</td><td>mapa de entrada + salida esperada (verificada)</td></tr>
+      </table>
+
+      <h2 id="oop">3. OOP + type-safe <span class="tag">se comprueba</span></h2>
+      <p>
+        Cada responsabilidad del sistema es una clase con su estado propio;
+        no hay funciones sueltas con lógica. El paquete está por capas y las
+        dependencias apuntan <b>hacia dentro</b> (los adaptadores dependen de
+        la aplicación y el dominio, nunca al revés).
+      </p>
+      <table>
+        <tr><th>Capa</th><th>Clases</th></tr>
+        <tr><td>domain</td><td><code>Zone</code>, <code>Connection</code>, <code>FlyInMap</code>, <code>Drone</code>, <code>ZoneType</code></td></tr>
+        <tr><td>parsing</td><td><code>MapParser</code></td></tr>
+        <tr><td>graph / pathfinding</td><td><code>Graph</code>, <code>Dijkstra</code>, <code>Path</code></td></tr>
+        <tr><td>simulation</td><td><code>Simulator</code>, <code>ScheduleValidator</code></td></tr>
+        <tr><td>application</td><td><code>FlyinSolver</code>, <code>SolveResult</code>, <code>RunMetrics</code></td></tr>
+        <tr><td>adapters</td><td><code>Cli</code>, <code>VisualRenderer</code>, API (FastAPI)</td></tr>
+      </table>
+      <div class="say">
+        <b>Type-safe:</b> "Corre <code>mypy .</code> — pasa sin errores. Hay
+        anotaciones de tipos en todo el código. En <code>make lint</code>
+        además uso los flags estrictos (<code>--disallow-untyped-defs</code>,
+        etc.)."
+      </div>
+      <div class="watch">
+        <b>Ojo herencia:</b> apenas uso herencia (solo <code>Enum</code>/<code>str</code>
+        en <code>ZoneType</code> y <code>LinePrefix</code>). Lo defiendo como
+        <b>composición sobre herencia</b>: no hay jerarquías forzadas.
+      </div>
+
+      <h2 id="grafo">4. El grafo propio <span class="tag">se comprueba</span></h2>
+      <p>
+        <span class="where">Está en <code>flyin/graph/graph.py</code>.</span>
+        Construyo yo la adyacencia; <b>no uso networkx, graphlib ni ninguna
+        librería de grafos</b>.
+      </p>
+      <div class="say">
+        <b>Cómo funciona:</b> "El grafo es un diccionario zona → conjunto de
+        vecinas. Recorro las conexiones y, como son bidireccionales, añado
+        <code>a→b</code> y <code>b→a</code>. Una zona <b>blocked</b> es
+        intransitable, así que no entra en el grafo: una arista existe solo si
+        sus dos extremos son transitables. Construirlo es <code>O(V + E)</code>."
+      </div>
+
+      <h2 id="parser">5. Parser y errores <span class="tag">se comprueba</span></h2>
+      <p><span class="where"><code>flyin/parsing/map_parser.py</code>.</span> Acepta:</p>
+      <ul>
+        <li><code>nb_drones: N</code> (primera línea significativa).</li>
+        <li>Zonas con prefijo: <code>start_hub:</code>, <code>end_hub:</code>, <code>hub:</code>, con <code>nombre x y</code>.</li>
+        <li>Metadatos <code>[zone=... max_drones=... color=...]</code> con defaults (<code>zone=normal</code>, <code>max_drones=1</code>).</li>
+        <li>Conexiones <code>connection: a-b</code>, con <code>[max_link_capacity=N]</code> (default 1).</li>
+        <li>Comentarios con <code>#</code> y líneas en blanco: se ignoran.</li>
+      </ul>
+      <p><b>Errores</b> (paran el programa, mensaje claro con nº de línea física, <code>exit 1</code>):</p>
+      <table>
+        <tr><th>Caso</th><th>Mensaje</th></tr>
+        <tr><td>falta <code>nb_drones</code></td><td>line 1: expected 'nb_drones:' as the first significant line</td></tr>
+        <tr><td>falta start/end hub</td><td>map must declare exactly one start_hub and one end_hub</td></tr>
+        <tr><td>tipo de zona inválido</td><td>line N: 'lava' is not a valid ZoneType</td></tr>
+        <tr><td>capacidad no positiva</td><td>line N: max_drones must be at least 1, got 0</td></tr>
+        <tr><td>conexión duplicada / self-loop / zona indefinida</td><td>line N: ... (mensaje específico)</td></tr>
+      </table>
+      <div class="say">
+        <b>Decisión que puedo defender:</b> "Una clave de metadato en el sitio
+        equivocado (p. ej. <code>max_link_capacity</code> en una zona) se
+        rechaza como si fuera inventada, para que un typo no cambie rutas en
+        silencio. Y valido las conexiones en dos pasadas, así el orden entre
+        zonas y conexiones en el fichero da igual."
+      </div>
+
+      <h2 id="zonas">6. Zonas y movimiento <span class="tag">se comprueba</span></h2>
+      <table>
+        <tr><th>Tipo de zona</th><th>Coste de entrar</th></tr>
+        <tr><td>normal</td><td>1 turno</td></tr>
+        <tr><td>priority</td><td>1 turno (preferida a igualdad de coste)</td></tr>
+        <tr><td>restricted</td><td>2 turnos (1 en la conexión, luego aterriza)</td></tr>
+        <tr><td>blocked</td><td>intransitable</td></tr>
+      </table>
+      <div class="say">
+        <b>Capacidades:</b> "Por defecto 1, tanto en zonas como en conexiones.
+        Start y end tienen capacidad <b>ilimitada</b> (su <code>max_drones</code>
+        se ignora). El coste depende de la zona <b>destino</b>."
+      </div>
+
+      <h2 id="dijkstra">7. Pathfinding: Dijkstra <span class="tag">explicar</span></h2>
+      <p><span class="where"><code>flyin/pathfinding/dijkstra.py</code>.</span></p>
+      <div class="say">
+        <b>Cómo lo explico:</b> "Uso Dijkstra sobre mi grafo. El peso de cada
+        arista es el coste de entrar en la zona destino (1 normal/priority, 2
+        restricted), así que 'la ruta más barata' significa 'la de menos
+        turnos'. Ordeno por la clave <code>(turnos, -nº_priority)</code>:
+        gana menos turnos y, a igualdad, la que pasa por más zonas priority.
+        La cola de prioridad es un <b>heap binario</b> (<code>heapq</code>),
+        pero el algoritmo lo escribo yo."
+      </div>
+      <div class="watch">
+        <b>Complejidad:</b> <code>O((V + E) · log V)</code>. Cada zona y cada
+        arista se procesan una vez y cada operación del heap cuesta
+        <code>log V</code>. Como los pesos son positivos, la primera vez que
+        saco una zona su coste es definitivo.
+      </div>
+
+      <h2 id="sim">8. Simulación y gestión de capacidad <span class="tag">explicar</span></h2>
+      <p><span class="where"><code>flyin/simulation/simulator.py</code> + <code>schedule_validator.py</code>.</span></p>
+      <div class="say">
+        <b>Turno atómico:</b> "Cada turno lo calculo entero contra una foto del
+        mundo <b>antes</b> de aplicarlo. Recorro los drones del más adelantado
+        al más atrasado, así los que salen de una zona liberan su hueco antes
+        de admitir a los que entran. La corrección <b>no depende del orden</b>
+        de iteración de los drones."
+      </div>
+      <div class="say">
+        <b>Restricted (2 turnos):</b> "Entrar en una zona restricted ocupa la
+        conexión un turno y <b>obliga</b> a aterrizar al siguiente. Por eso la
+        salida solo es legal si reservo la capacidad de la zona de llegada para
+        el turno de aterrizaje."
+      </div>
+      <div class="say">
+        <b>Red de seguridad (fallback):</b> "Simulo primero en modo
+        <b>optimista</b> (rápido). Un <b>validador independiente</b>
+        (<code>ScheduleValidator</code>) reproduce el plan y re-deriva todas las
+        reglas desde cero; si lo rechaza, caigo a un modo <b>conservador</b> que
+        siempre es válido. Un plan lento y válido gana a uno rápido e inválido."
+      </div>
+
+      <h2 id="salida">9. Formato de salida <span class="tag">se comprueba</span></h2>
+      <ul>
+        <li>Una línea por turno.</li>
+        <li>Tokens separados por espacio: <code>D&lt;ID&gt;-&lt;zona&gt;</code> (aterriza) o <code>D&lt;ID&gt;-&lt;a&gt;-&lt;b&gt;</code> (en vuelo hacia restricted).</li>
+        <li>Los drones que <b>no se mueven se omiten</b>.</li>
+        <li>Termina exactamente cuando todos llegan al end.</li>
+      </ul>
+
+      <h2 id="visual">10. Visualización <span class="tag">se comprueba</span></h2>
+      <div class="say">
+        <b>Digo:</b> "<code>make run-visual</code> muestra el mismo resultado
+        para humanos, en color, <b>sin tocar</b> la salida del evaluador (es un
+        flag aparte). Pinta cada zona (tipo, capacidad, coordenadas, color) y
+        los turnos con cada token en el color de su zona; los colores salen del
+        propio mapa (<code>color=</code>). Además hay una web (API FastAPI +
+        HTML/CSS/JS) que dibuja el mapa y anima los drones."
+      </div>
+
+      <h2 id="bench">11. Rendimiento / benchmarks <span class="tag">se comprueba</span></h2>
+      <p><code>make bench</code> mide los 10 mapas oficiales contra su objetivo.</p>
+      <table>
+        <tr><th>Categoría</th><th>Objetivo</th><th>Resultado</th></tr>
+        <tr><td>Easy (3 mapas)</td><td>&lt;10 de media</td><td>4 / 6 / 4 — todos por debajo</td></tr>
+        <tr><td>Medium (3)</td><td>10–30</td><td>8 / 10 / 8</td></tr>
+        <tr><td>Hard (3)</td><td>&lt;60</td><td>13 / 16 / 26</td></tr>
+        <tr><td>Challenger</td><td>récord 45</td><td><b>43</b> (lo bate)</td></tr>
+      </table>
+
+      <h2 id="edge">12. Casos límite y errores <span class="tag">se comprueba</span></h2>
+      <ul>
+        <li>Un solo dron / camino lineal: funciona.</li>
+        <li>Cuellos de botella y capacidad limitada: el planificador respeta la capacidad.</li>
+        <li>Grafo desconectado (sin ruta): error <code>no route from 's' to 'e'</code>, <code>exit 1</code> (sin crash).</li>
+        <li>Conexiones inválidas / capacidades cero: rechazadas en el parser.</li>
+      </ul>
+
+      <h2 id="live">13. ⭐ Cambio en vivo: <code>--capacity-info</code></h2>
+      <div class="live">
+        <p>
+          Me pedirán añadir un flag <code>--capacity-info</code> que, además de
+          la simulación normal, imprima por turno la ocupación de zonas y
+          conexiones. <b>≤10 min.</b> Toco <b>dos ficheros</b>. Los datos ya
+          están en <code>cli.py</code> (<code>result.fly_in_map</code> con las
+          capacidades y <code>result.movement_lines</code>).
+        </p>
+
+        <ol class="steps">
+          <li>
+            <b>Paso 1 —</b> en <code>adapters/cli/arguments.py</code>: reconocer
+            el flag (calcado de <code>--visual</code>).
+            <pre><code>CAPACITY_INFO_FLAG = "--capacity-info"          # nueva constante
+
+# dentro de CliArguments, añadir el campo:
+    capacity_info: bool
+
+# en parse(), permitir ambos flags y rellenar el campo:
+    known = {VISUAL_FLAG, CAPACITY_INFO_FLAG}
+    if len(map_files) &gt; 1 or any(f not in known for f in flags):
+        return None
+    return cls(
+        map_file=map_files[0] if map_files else None,
+        visual=VISUAL_FLAG in flags,
+        capacity_info=CAPACITY_INFO_FLAG in flags
+    )</code></pre>
+          </li>
+          <li>
+            <b>Paso 2 —</b> en <code>adapters/cli/cli.py</code>, dentro de
+            <code>run()</code>, justo antes de imprimir las líneas, añadir el
+            bloque de capacidad si se pidió:
+            <pre><code>        lines = (
+            VisualRenderer(result.fly_in_map).render(result.movement_lines)
+            if arguments.visual
+            else result.movement_lines
+        )
+        if arguments.capacity_info:                 # NUEVO
+            lines = list(lines) + self._capacity_lines(
+                result.fly_in_map, result.movement_lines
+            )</code></pre>
+          </li>
+          <li>
+            <b>Paso 3 —</b> añadir el método <code>_capacity_lines</code> a la
+            clase <code>Cli</code> (reproduce los turnos contando ocupación):
+            <pre><code>    def _capacity_lines(self, fly_in_map, movement_lines):
+        positions = {i: fly_in_map.start.name
+                     for i in range(1, fly_in_map.nb_drones + 1)}
+        lines = []
+        for turn, movement in enumerate(movement_lines, start=1):
+            crossings = {}
+            for token in movement.split():
+                drone, *rest = token.split("-")
+                drone_id = int(drone[1:])
+                if len(rest) == 1:
+                    prev = positions[drone_id]
+                    if prev is not None:
+                        key = frozenset((prev, rest[0]))
+                        crossings[key] = crossings.get(key, 0) + 1
+                    positions[drone_id] = rest[0]
+                else:
+                    positions[drone_id] = None
+                    key = frozenset((rest[0], rest[1]))
+                    crossings[key] = crossings.get(key, 0) + 1
+            counts = {}
+            for zone in positions.values():
+                if zone is not None:
+                    counts[zone] = counts.get(zone, 0) + 1
+            lines.append(f"Turn {turn} capacity:")
+            for name, zone in fly_in_map.zones.items():
+                cap = ("inf" if zone.is_start or zone.is_end
+                       else zone.max_drones or 1)
+                lines.append(
+                    f"  Zone {name}: {counts.get(name, 0)}/{cap} drones"
+                )
+            for conn in fly_in_map.connections:
+                key = frozenset((conn.zone_a, conn.zone_b))
+                cap = conn.max_link_capacity or 1
+                lines.append(
+                    f"  Connection {conn.zone_a}-{conn.zone_b}: "
+                    f"{crossings.get(key, 0)}/{cap} used"
+                )
+        return lines</code></pre>
+          </li>
+          <li>
+            <b>Paso 4 — demostrar:</b>
+            <pre><code>make run ARGS="--capacity-info maps/easy/01_linear_path.txt"</code></pre>
+          </li>
+        </ol>
+
+        <div class="say">
+          <b>Lo que explico mientras lo escribo:</b> "Un token
+          <code>D&lt;id&gt;-&lt;zona&gt;</code> es un aterrizaje: cuento el cruce
+          de la conexión desde donde estaba y actualizo su posición. Un token
+          de tres partes <code>D&lt;id&gt;-a-b</code> es un despegue restricted:
+          cuento el cruce y marco el dron 'en vuelo' (<code>None</code>) para no
+          contarlo en ninguna zona. Al final de cada turno cuento drones por
+          zona y comparo con la capacidad."
+        </div>
+        <div class="watch">
+          <b>Los nombres de zona no llevan guiones</b> (regla del subject), así
+          que partir el token por <code>-</code> es seguro: el primer trozo es
+          <code>D&lt;id&gt;</code> y el resto son zonas.
+        </div>
+      </div>
+
+      <h2 id="bonus">14. Bonus</h2>
+      <ul>
+        <li><b>Rendimiento excepcional:</b> los 10 mapas igualan o baten su objetivo.</li>
+        <li><b>Challenger:</b> <code>the_impossible_dream</code> resuelto en <b>43</b> turnos, batiendo el récord de 45.</li>
+      </ul>
+
+      <h2 id="glosario">15. Glosario rápido</h2>
+      <table>
+        <tr><th>Término</th><th>Una frase</th></tr>
+        <tr><td>makespan</td><td>número de turnos en entregar todos los drones (lo que optimizo)</td></tr>
+        <tr><td>turno atómico</td><td>el plan del turno se calcula entero y se aplica de golpe</td></tr>
+        <tr><td>front-first</td><td>muevo primero los drones más cercanos al final</td></tr>
+        <tr><td>optimista → conservador</td><td>rápido primero; si el validador lo rechaza, modo lento siempre válido</td></tr>
+        <tr><td>Dijkstra</td><td>ruta más barata con pesos positivos, usando un heap</td></tr>
+        <tr><td>O((V+E)·log V)</td><td>coste del pathfinding: cada nodo/arista una vez, heap log V</td></tr>
+      </table>
+    </div>
+  </body>
+</html>
