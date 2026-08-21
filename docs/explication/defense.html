@@ -296,21 +296,30 @@ make lint                                   # flake8 + mypy</code></pre>
         <p>
           Me pedirán añadir un flag <code>--capacity-info</code> que, además de
           la simulación normal, imprima por turno la ocupación de zonas y
-          conexiones. <b>≤10 min.</b> Toco <b>dos ficheros</b>. Los datos ya
-          están en <code>cli.py</code> (<code>result.fly_in_map</code> con las
-          capacidades y <code>result.movement_lines</code>).
+          conexiones. <b>La lógica ya está en mi clase de métricas</b>:
+          <code>RunMetrics.capacity_lines(mapa)</code>
+          (<code>application/metrics.py</code>) reproduce las líneas de
+          movimiento y devuelve el informe de ocupación. En vivo <b>solo la
+          cablo</b>: reconozco el flag y llamo al método.
         </p>
+        <div class="say">
+          <b>Cómo lo enmarco:</b> "Al analizar las estadísticas del run añadí a
+          <code>RunMetrics</code> el desglose de capacidad por turno, con test,
+          pero sin exponerlo por el CLI. Lo que hago en vivo es
+          <b>enchufarlo</b> a un flag nuevo: toco el parseo de argumentos y el
+          punto de salida, que es justo lo que se pide."
+        </div>
 
         <ol class="steps">
           <li>
             <b>Paso 1 —</b> en <code>adapters/cli/arguments.py</code>: reconocer
             el flag (calcado de <code>--visual</code>).
-            <pre><code>CAPACITY_INFO_FLAG = "--capacity-info"          # nueva constante
+            <pre><code>CAPACITY_INFO_FLAG = "--capacity-info"       # nueva constante
 
-# dentro de CliArguments, añadir el campo:
+# en CliArguments, un campo más:
     capacity_info: bool
 
-# en parse(), permitir ambos flags y rellenar el campo:
+# en parse(), permitir el flag y rellenar el campo:
     known = {VISUAL_FLAG, CAPACITY_INFO_FLAG}
     if len(map_files) &gt; 1 or any(f not in known for f in flags):
         return None
@@ -321,75 +330,31 @@ make lint                                   # flake8 + mypy</code></pre>
     )</code></pre>
           </li>
           <li>
-            <b>Paso 2 —</b> en <code>adapters/cli/cli.py</code>, dentro de
-            <code>run()</code>, justo antes de imprimir las líneas, añadir el
-            bloque de capacidad si se pidió:
-            <pre><code>        lines = (
-            VisualRenderer(result.fly_in_map).render(result.movement_lines)
-            if arguments.visual
-            else result.movement_lines
-        )
-        if arguments.capacity_info:                 # NUEVO
-            lines = list(lines) + self._capacity_lines(
-                result.fly_in_map, result.movement_lines
-            )</code></pre>
+            <b>Paso 2 —</b> en <code>adapters/cli/cli.py</code>: importar
+            <code>RunMetrics</code> y, en <code>run()</code> antes de imprimir,
+            añadir el informe si se pidió. <b>Esto es todo lo nuevo de salida.</b>
+            <pre><code>from flyin.application.metrics import RunMetrics
+
+        if arguments.capacity_info:
+            lines = list(lines) + RunMetrics(
+                result.movement_lines
+            ).capacity_lines(result.fly_in_map)</code></pre>
           </li>
           <li>
-            <b>Paso 3 —</b> añadir el método <code>_capacity_lines</code> a la
-            clase <code>Cli</code> (reproduce los turnos contando ocupación):
-            <pre><code>    def _capacity_lines(self, fly_in_map, movement_lines):
-        positions = {i: fly_in_map.start.name
-                     for i in range(1, fly_in_map.nb_drones + 1)}
-        lines = []
-        for turn, movement in enumerate(movement_lines, start=1):
-            crossings = {}
-            for token in movement.split():
-                drone, *rest = token.split("-")
-                drone_id = int(drone[1:])
-                if len(rest) == 1:
-                    prev = positions[drone_id]
-                    if prev is not None:
-                        key = frozenset((prev, rest[0]))
-                        crossings[key] = crossings.get(key, 0) + 1
-                    positions[drone_id] = rest[0]
-                else:
-                    positions[drone_id] = None
-                    key = frozenset((rest[0], rest[1]))
-                    crossings[key] = crossings.get(key, 0) + 1
-            counts = {}
-            for zone in positions.values():
-                if zone is not None:
-                    counts[zone] = counts.get(zone, 0) + 1
-            lines.append(f"Turn {turn} capacity:")
-            for name, zone in fly_in_map.zones.items():
-                cap = ("inf" if zone.is_start or zone.is_end
-                       else zone.max_drones or 1)
-                lines.append(
-                    f"  Zone {name}: {counts.get(name, 0)}/{cap} drones"
-                )
-            for conn in fly_in_map.connections:
-                key = frozenset((conn.zone_a, conn.zone_b))
-                cap = conn.max_link_capacity or 1
-                lines.append(
-                    f"  Connection {conn.zone_a}-{conn.zone_b}: "
-                    f"{crossings.get(key, 0)}/{cap} used"
-                )
-        return lines</code></pre>
-          </li>
-          <li>
-            <b>Paso 4 — demostrar:</b>
+            <b>Paso 3 — demostrar:</b>
             <pre><code>make run ARGS="--capacity-info maps/easy/01_linear_path.txt"</code></pre>
           </li>
         </ol>
 
         <div class="say">
-          <b>Lo que explico mientras lo escribo:</b> "Un token
-          <code>D&lt;id&gt;-&lt;zona&gt;</code> es un aterrizaje: cuento el cruce
-          de la conexión desde donde estaba y actualizo su posición. Un token
-          de tres partes <code>D&lt;id&gt;-a-b</code> es un despegue restricted:
-          cuento el cruce y marco el dron 'en vuelo' (<code>None</code>) para no
-          contarlo en ninguna zona. Al final de cada turno cuento drones por
-          zona y comparo con la capacidad."
+          <b>Cómo funciona (por si preguntan):</b>
+          "<code>capacity_lines</code> reproduce las líneas de movimiento. Un
+          token <code>D&lt;id&gt;-&lt;zona&gt;</code> es un aterrizaje: cuenta el
+          cruce de la conexión desde donde estaba el dron y actualiza su
+          posición. Un token de tres partes <code>D&lt;id&gt;-a-b</code> es un
+          despegue restricted: cuenta el cruce y marca el dron 'en vuelo'
+          (<code>None</code>) para no contarlo en ninguna zona. Al final de cada
+          turno cuenta drones por zona y lo compara con la capacidad."
         </div>
         <div class="watch">
           <b>Los nombres de zona no llevan guiones</b> (regla del subject), así
