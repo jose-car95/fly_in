@@ -1,0 +1,13 @@
+# linear stress map: length=3 kinds=('normal', 'restricted', 'normal') caps=(1, 2, 1) link_cap=3 drones=9
+nb_drones: 9
+
+start_hub: start 0 0 [color=green]
+hub: z0 1 0 [color=orange]
+hub: z1 2 0 [zone=restricted color=purple max_drones=2]
+hub: z2 3 0 [color=cyan]
+end_hub: goal 4 0 [color=red]
+
+connection: start-z0 [max_link_capacity=3]
+connection: z0-z1 [max_link_capacity=3]
+connection: z1-z2 [max_link_capacity=3]
+connection: z2-goal [max_link_capacity=3]
