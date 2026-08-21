@@ -50,6 +50,13 @@ class Cli:
     def run(self, argv: list[str]) -> int:
         """Run the CLI over its arguments and return a process exit code.
 
+        Naming no map file is not an error: the human is offered the catalog
+        instead. That case is told apart by ``None`` rather than truthiness,
+        since an empty path is a read error to report, not a reason to open
+        the catalog. The colored view replaces the exact movement lines rather
+        than joining them, because mixing both would break the output format
+        the subject fixes.
+
         Args:
             argv: Command-line arguments without the program name; at most one
                 map file path and an optional ``--visual`` flag are expected.
@@ -63,9 +70,6 @@ class Cli:
         if arguments is None:
             self._err.write("usage: flyin [--visual] [map_file]\n")
             return 2
-        # Naming no map file is not an error: the human gets offered the
-        # catalog. Tested against None, not truthiness, since an empty path is
-        # a read error to report rather than a reason to open the catalog.
         map_file = arguments.map_file
         if map_file is None:
             map_file = self._selected_map()
@@ -83,8 +87,6 @@ class Cli:
             return 1
         for warning in result.warnings:
             self._err.write(f"{warning}\n")
-        # The colored view replaces the exact lines instead of joining them:
-        # mixing both would break the output format the subject fixes.
         lines = (
             VisualRenderer(result.fly_in_map).render(result.movement_lines)
             if arguments.visual
@@ -101,6 +103,12 @@ class Cli:
         belong on stdout; only the refusals go to stderr. Nothing here can
         reach the evaluator's output, which always names its map file.
 
+        The option numbers are right-aligned so a two-digit option keeps the
+        dots in one column. The prompt has no trailing newline, so it is
+        flushed explicitly: a line-buffered stdout would otherwise hold it
+        back until the answer was already typed. A blank line is written after
+        the answer so the simulation does not start glued to what was typed.
+
         Returns:
             The path of the chosen map, or ``None`` when nothing valid was
             selected, the reason already written to stderr.
@@ -112,16 +120,12 @@ class Cli:
             )
             return None
         self._out.write("\nAvailable maps:\n\n")
-        # Right-align the numbers so a two-digit option keeps the dots in one
-        # column instead of shifting the whole list.
         width = len(str(len(options)))
         for option in options:
             self._out.write(
                 f"  {option.index:>{width}}. {option.display_path}\n"
             )
         self._out.write("\nType the number of the map to run: ")
-        # The prompt has no trailing newline, so a line-buffered stdout would
-        # hold it back and only show it once the answer was already typed.
         self._out.flush()
         typed = self._in.readline().strip()
         try:
@@ -133,7 +137,5 @@ class Cli:
         if selected is None:
             self._err.write(f"no map numbered {index}\n")
             return None
-        # Blank line so the simulation does not start glued to the answer the
-        # human just typed.
         self._out.write("\n")
         return str(selected.path)

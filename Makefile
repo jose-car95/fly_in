@@ -17,7 +17,9 @@ run-visual:
 	uv run --project $(BACKEND) python -m flyin --visual $(ARGS)
 
 serve:
-	uv run --project $(BACKEND) uvicorn flyin.adapters.api.app:create_app --factory --host 127.0.0.1 --port 8000 --reload
+	uv run --project $(BACKEND) uvicorn \
+		flyin.adapters.api.app:create_app \
+		--factory --host 127.0.0.1 --port 8000 --reload
 
 serve-web:
 	python3 -m http.server 8080 --bind 127.0.0.1 --directory frontend
