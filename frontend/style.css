@@ -115,6 +115,13 @@ h1 {
   font-size: 0.9rem;
 }
 
+.map-info {
+  margin: -0.5rem 0 1rem;
+  color: var(--muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
 .map-controls {
   display: flex;
   align-items: center;
@@ -190,7 +197,6 @@ h1 {
 .zone-label {
   fill: var(--text);
   font-family: ui-monospace, Menlo, monospace;
-  font-size: 20px;
 }
 
 .modal {
