@@ -31,3 +31,6 @@ htmlcov/
 Thumbs.db
 
 *.log
+
+# WSL/Windows alternate-data-stream cruft
+*:Zone.Identifier

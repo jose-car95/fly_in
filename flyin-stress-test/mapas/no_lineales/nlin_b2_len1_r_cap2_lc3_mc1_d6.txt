@@ -1,0 +1,14 @@
+# non-linear stress map: branches=2 length=1 kind=restricted cap=2 link_cap=3 merge_cap=1 drones=6
+nb_drones: 6
+
+start_hub: start 0 0 [color=green]
+hub: b0z0 1 -1 [zone=restricted color=blue max_drones=2]
+hub: b1z0 1 1 [zone=restricted color=purple max_drones=2]
+hub: merge 2 0 [color=purple]
+end_hub: goal 3 0 [color=red]
+
+connection: start-b0z0 [max_link_capacity=3]
+connection: b0z0-merge [max_link_capacity=3]
+connection: start-b1z0 [max_link_capacity=3]
+connection: b1z0-merge [max_link_capacity=3]
+connection: merge-goal [max_link_capacity=3]
